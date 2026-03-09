@@ -1,0 +1,265 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-file-document-outline"></i> 日志查看器</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- 左侧：日志文件列表 -->
+          <div class="col-md-3">
+            <h6>日志文件列表</h6>
+            <div class="list-group" style="max-height: 600px; overflow-y: auto;">
+              <a href="javascript:void(0)" 
+                 class="list-group-item list-group-item-action"
+                 :class="{active: selectedFile === log.name}"
+                 v-for="log in logs" 
+                 :key="log.name"
+                 @click="selectFile(log.name)">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="mdi mdi-file-document"></i>
+                    <small>{{ log.name }}</small>
+                  </div>
+                  <span class="badge bg-secondary">{{ log.size_format }}</span>
+                </div>
+                <small class="text-muted">{{ log.mtime_format }}</small>
+              </a>
+              <div v-if="logs.length === 0" class="text-center text-muted py-3">
+                暂无日志文件
+              </div>
+            </div>
+          </div>
+          
+          <!-- 右侧：日志内容 -->
+          <div class="col-md-9">
+            <div v-if="selectedFile" style="height: calc(100vh - 200px); display: flex; flex-direction: column;">
+              <!-- 操作按钮 -->
+              <div class="mb-3 d-flex gap-2">
+                <div class="input-group flex-grow-1">
+                  <input type="text" class="form-control" v-model="searchKeyword" placeholder="搜索关键词..." @keyup.enter="searchLog">
+                  <button class="btn btn-primary" @click="searchLog">
+                    <i class="mdi mdi-magnify"></i> 搜索
+                  </button>
+                </div>
+                <button class="btn btn-secondary" @click="loadLog">
+                  <i class="mdi mdi-refresh"></i> 刷新
+                </button>
+                <button class="btn btn-info" @click="downloadLog">
+                  <i class="mdi mdi-download"></i> 下载
+                </button>
+                <button class="btn btn-danger" @click="clearLog">
+                  <i class="mdi mdi-delete"></i> 清空
+                </button>
+              </div>
+              
+              <!-- 日志内容 -->
+              <div class="card bg-dark text-white flex-grow-1" style="overflow: hidden;">
+                <div class="card-body" style="height: 100%; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;">
+                  <div v-if="searchMode">
+                    <div class="mb-2">
+                      <strong>搜索结果：</strong> 找到 {{ searchResults.total }} 条匹配记录
+                      <button class="btn btn-sm btn-outline-light ms-2" @click="exitSearch">
+                        <i class="mdi mdi-close"></i> 退出搜索
+                      </button>
+                    </div>
+                    <div v-for="result in searchResults.results" :key="result.line" class="mb-1">
+                      <span class="text-warning">[行 {{ result.line }}]</span> {{ result.content }}
+                    </div>
+                    <div v-if="searchResults.total === 0" class="text-muted">
+                      未找到匹配的内容
+                    </div>
+                  </div>
+                  <pre v-else class="mb-0" style="color:black;">{{ logContent }}</pre>
+                </div>
+              </div>
+              
+              <div class="mt-2 text-muted">
+                <small>显示最后 100 行 | 文件: {{ selectedFile }}</small>
+              </div>
+            </div>
+            
+            <div v-else class="text-center text-muted py-5">
+              <i class="mdi mdi-file-document-outline" style="font-size: 48px;"></i>
+              <p class="mt-3">请选择左侧的日志文件</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      logs: [],
+      selectedFile: '',
+      logContent: '',
+      searchKeyword: '',
+      searchMode: false,
+      searchResults: {
+        total: 0,
+        results: []
+      }
+    };
+  },
+  mounted() {
+    this.loadLogList();
+  },
+  methods: {
+    async loadLogList() {
+      try {
+        const res = await this.postAsync('logs', { action: 'list' });
+        if (res.code === 0) {
+          this.logs = res.data;
+          // 自动选择第一个文件
+          if (this.logs.length > 0 && !this.selectedFile) {
+            this.selectFile(this.logs[0].name);
+          }
+        }
+      } catch (e) {
+        console.error('加载日志列表失败:', e);
+      }
+    },
+    
+    selectFile(file) {
+      this.selectedFile = file;
+      this.searchMode = false;
+      this.searchKeyword = '';
+      this.loadLog();
+    },
+    
+    async loadLog() {
+      if (!this.selectedFile) return;
+      
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('logs', {
+          action: 'read',
+          file: this.selectedFile,
+          lines: 100
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.logContent = res.data.content;
+          this.searchMode = false;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    async searchLog() {
+      if (!this.selectedFile || !this.searchKeyword) {
+        layer.msg('请输入搜索关键词', { icon: 0 });
+        return;
+      }
+      
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('logs', {
+          action: 'search',
+          file: this.selectedFile,
+          keyword: this.searchKeyword
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.searchMode = true;
+          this.searchResults = res.data;
+        } else {
+          layer.msg(res.msg || '搜索失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('搜索失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    exitSearch() {
+      this.searchMode = false;
+      this.searchKeyword = '';
+      this.loadLog();
+    },
+    
+    async clearLog() {
+      if (!this.selectedFile) return;
+      
+      this.confirm('确定要清空日志文件吗？此操作不可恢复！', async () => {
+        const loading = layer.load();
+        
+        try {
+          const res = await this.postAsync('logs', {
+            action: 'clear',
+            file: this.selectedFile
+          });
+          
+          layer.close(loading);
+          
+          if (res.code === 1) {
+            layer.msg(res.msg, { icon: 1 });
+            this.loadLog();
+            this.loadLogList();
+          } else {
+            layer.msg(res.msg || '清空失败', { icon: 2 });
+          }
+        } catch (e) {
+          layer.close(loading);
+          layer.msg('清空失败: ' + e.message, { icon: 2 });
+        }
+      });
+    },
+    
+    downloadLog() {
+      if (!this.selectedFile) return;
+      
+      // 创建一个隐藏的表单来提交下载请求
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/admin/dev/logs';
+      form.target = '_blank';
+      
+      const actionInput = document.createElement('input');
+      actionInput.type = 'hidden';
+      actionInput.name = 'action';
+      actionInput.value = 'download';
+      form.appendChild(actionInput);
+      
+      const fileInput = document.createElement('input');
+      fileInput.type = 'hidden';
+      fileInput.name = 'file';
+      fileInput.value = this.selectedFile;
+      form.appendChild(fileInput);
+      
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

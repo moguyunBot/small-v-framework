@@ -7,7 +7,7 @@
 <meta name="keywords" content="LightYear,LightYearAdmin,光年,后台模板,后台管理系统,光年HTML模板">
 <meta name="description" content="Light Year Admin V5是一个基于Bootstrap v5.1.3的后台管理系统的HTML模板。">
 <meta name="author" content="yinq">
-<title>首页 - {:config('admin.basic.config.title.value')}后台管理系统</title>
+<title>首页 - {:get_config('basic.title')}后台管理系统</title>
 <!--<title>首页 - {:config('plugin.admin.config.basic.config.title.value')}后台管理系统</title>-->
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
 <meta name="mobile-web-app-capable" content="yes">
@@ -392,6 +392,12 @@ ul.pagination li:last-child span {
                   <span>修改密码</span>
                 </a>
               </li>
+              <li>
+                <a class="dropdown-item" href="javascript:void(0)" onclick="clearCache()">
+                  <i class="mdi mdi-delete-sweep"></i>
+                  <span>清除缓存</span>
+                </a>
+              </li>
               <li class="dropdown-divider"></li>
               <li>
                 <a class="dropdown-item" href="/admin/index/login">
@@ -473,6 +479,35 @@ ul.pagination li:last-child span {
                       }
                   });
               })
+          }
+      });
+  }
+  
+  // 清除缓存
+  function clearCache() {
+      Swal.fire({
+          title: 'warning',
+          type: 'warning',
+          html: '确定要清除所有缓存吗？',
+          showCancelButton: true,
+          allowOutsideClick: false,
+          confirmButtonText: 'OK',
+          cancelButtonText: 'cancel'
+      }).then(function (isConfirm) {
+          if (isConfirm.value === true) {
+              let ll = layer.load();
+              $.post('/admin/dev/cache', {action: 'clear_all'}, res => {
+                  layer.close(ll);
+                  Swal.fire({
+                      title: res.code == 1 ? 'success' : 'error',
+                      type: res.code == 1 ? 'success' : 'error',
+                      html: res.msg,
+                      allowOutsideClick: false,
+                      customClass: {
+                        confirmButton: 'btn' + (res.code == 1 ? ' btn-primary' : ' btn-danger')
+                      }
+                  });
+              });
           }
       });
   }

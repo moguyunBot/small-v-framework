@@ -1,0 +1,146 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-delete-sweep"></i> 缓存管理</h5>
+      </div>
+      <div class="card-body">
+        <!-- 缓存统计 -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card bg-primary bg-opacity-10">
+              <div class="card-body text-center">
+                <i class="mdi mdi-file-document-outline text-primary fs-1"></i>
+                <h5 class="mt-2">模板缓存</h5>
+                <p class="fs-4 mb-0">{{ stats.template_format }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card bg-success bg-opacity-10">
+              <div class="card-body text-center">
+                <i class="mdi mdi-database text-success fs-1"></i>
+                <h5 class="mt-2">数据缓存</h5>
+                <p class="fs-4 mb-0">{{ stats.data_format }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card bg-info bg-opacity-10">
+              <div class="card-body text-center">
+                <i class="mdi mdi-folder text-info fs-1"></i>
+                <h5 class="mt-2">总缓存</h5>
+                <p class="fs-4 mb-0">{{ stats.total_format }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="row">
+          <div class="col-md-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+              <button class="btn btn-danger btn-lg" @click="clearCache('clear_all')">
+                <i class="mdi mdi-delete-sweep"></i> 清除所有缓存
+              </button>
+              <button class="btn btn-warning btn-lg" @click="clearCache('clear_template')">
+                <i class="mdi mdi-file-document-outline"></i> 清除模板缓存
+              </button>
+              <button class="btn btn-info btn-lg" @click="clearCache('clear_data')">
+                <i class="mdi mdi-database"></i> 清除数据缓存
+              </button>
+              <button class="btn btn-secondary btn-lg" @click="loadStats">
+                <i class="mdi mdi-refresh"></i> 刷新统计
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 说明 -->
+        <div class="alert alert-info mt-4" role="alert">
+          <h6 class="alert-heading"><i class="mdi mdi-information"></i> 说明</h6>
+          <ul class="mb-0">
+            <li><strong>模板缓存：</strong>包含视图模板编译后的缓存文件</li>
+            <li><strong>数据缓存：</strong>包含应用程序的数据缓存</li>
+            <li><strong>清除缓存：</strong>清除后会自动重新生成，不影响系统运行</li>
+            <li><strong>建议：</strong>修改模板文件后清除模板缓存，修改配置后清除数据缓存</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      stats: {
+        template_format: '0 B',
+        data_format: '0 B',
+        total_format: '0 B'
+      }
+    };
+  },
+  mounted() {
+    this.loadStats();
+  },
+  methods: {
+    async loadStats() {
+      try {
+        const res = await this.postAsync('cache', { action: 'get_stats' });
+        if (res.code === 0) {
+          this.stats = res.data;
+        }
+      } catch (e) {
+        console.error('加载统计失败:', e);
+      }
+    },
+    
+    async clearCache(action) {
+      const messages = {
+        'clear_all': '确定要清除所有缓存吗？',
+        'clear_template': '确定要清除模板缓存吗？',
+        'clear_data': '确定要清除数据缓存吗？'
+      };
+      
+      this.confirm(messages[action], async () => {
+        const loading = layer.load();
+        
+        try {
+          const res = await this.postAsync('cache', { action: action });
+          layer.close(loading);
+          
+          if (res.code === 1) {
+            layer.msg(res.msg, { icon: 1 });
+            // 刷新统计
+            this.loadStats();
+          } else {
+            layer.msg(res.msg || '操作失败', { icon: 2 });
+          }
+        } catch (e) {
+          layer.close(loading);
+          layer.msg('操作失败: ' + e.message, { icon: 2 });
+        }
+      });
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}
