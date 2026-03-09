@@ -205,6 +205,183 @@ class Dev extends Base
     }
     
     /**
+     * Composer 管理
+     * @return \Webman\Http\Response
+     */
+    public function composer()
+    {
+        if ($this->isPost()) {
+            $action = $this->post['action'] ?? '';
+            
+            try {
+                switch ($action) {
+                    case 'installed':
+                        $packages = $this->getInstalledPackages();
+                        return json(['code' => 0, 'data' => $packages]);
+                        
+                    case 'search':
+                        $keyword = $this->post['keyword'] ?? '';
+                        $results = $this->searchPackages($keyword);
+                        return json(['code' => 0, 'data' => $results]);
+                        
+                    case 'install':
+                        $package = $this->post['package'] ?? '';
+                        $this->installPackage($package);
+                        return success('安装成功，请刷新页面查看');
+                        
+                    case 'update':
+                        $package = $this->post['package'] ?? '';
+                        $this->updatePackage($package);
+                        return success('更新成功');
+                        
+                    case 'remove':
+                        $package = $this->post['package'] ?? '';
+                        $this->removePackage($package);
+                        return success('删除成功');
+                        
+                    default:
+                        return error('未知操作');
+                }
+            } catch (\Exception $e) {
+                return error($e->getMessage());
+            }
+        }
+        
+        return $this->view('dev/composer');
+    }
+    
+    /**
+     * 获取已安装的包
+     */
+    protected function getInstalledPackages()
+    {
+        $composerLock = base_path() . '/composer.lock';
+        
+        if (!file_exists($composerLock)) {
+            return [];
+        }
+        
+        $lockData = json_decode(file_get_contents($composerLock), true);
+        $packages = [];
+        
+        if (isset($lockData['packages'])) {
+            foreach ($lockData['packages'] as $package) {
+                $packages[] = [
+                    'name' => $package['name'],
+                    'version' => $package['version'],
+                    'description' => $package['description'] ?? '',
+                    'type' => $package['type'] ?? 'library',
+                    'homepage' => $package['homepage'] ?? '',
+                    'time' => $package['time'] ?? ''
+                ];
+            }
+        }
+        
+        return $packages;
+    }
+    
+    /**
+     * 搜索包
+     */
+    protected function searchPackages($keyword)
+    {
+        if (empty($keyword)) {
+            throw new \Exception('请输入搜索关键词');
+        }
+        
+        // 使用 Packagist API 搜索
+        $url = "https://packagist.org/search.json?q=" . urlencode($keyword);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        
+        if (!$response) {
+            throw new \Exception('搜索失败，请检查网络连接');
+        }
+        
+        $data = json_decode($response, true);
+        
+        if (!isset($data['results'])) {
+            return [];
+        }
+        
+        $results = [];
+        foreach ($data['results'] as $item) {
+            $results[] = [
+                'name' => $item['name'],
+                'description' => $item['description'] ?? '',
+                'downloads' => $item['downloads'] ?? 0,
+                'favers' => $item['favers'] ?? 0,
+                'repository' => $item['repository'] ?? ''
+            ];
+        }
+        
+        return array_slice($results, 0, 20); // 最多返回20个结果
+    }
+    
+    /**
+     * 安装包
+     */
+    protected function installPackage($package)
+    {
+        if (empty($package)) {
+            throw new \Exception('请指定要安装的包');
+        }
+        
+        $basePath = base_path();
+        $command = "cd {$basePath} && composer require {$package} 2>&1";
+        
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            throw new \Exception('安装失败: ' . implode("\n", $output));
+        }
+    }
+    
+    /**
+     * 更新包
+     */
+    protected function updatePackage($package)
+    {
+        if (empty($package)) {
+            throw new \Exception('请指定要更新的包');
+        }
+        
+        $basePath = base_path();
+        $command = "cd {$basePath} && composer update {$package} 2>&1";
+        
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            throw new \Exception('更新失败: ' . implode("\n", $output));
+        }
+    }
+    
+    /**
+     * 删除包
+     */
+    protected function removePackage($package)
+    {
+        if (empty($package)) {
+            throw new \Exception('请指定要删除的包');
+        }
+        
+        $basePath = base_path();
+        $command = "cd {$basePath} && composer remove {$package} 2>&1";
+        
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            throw new \Exception('删除失败: ' . implode("\n", $output));
+        }
+    }
+    
+    /**
      * 获取文件列表
      */
     protected function getFileList($path)
