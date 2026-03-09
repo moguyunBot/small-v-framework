@@ -5,9 +5,16 @@ use Webman\Captcha\CaptchaBuilder;
 use Webman\Captcha\PhraseBuilder;
 use app\admin\model\Admin;
 
+/**
+ * 后台首页控制器
+ */
 class Index extends Base{
     protected $noNeedLogin = ['login','captcha'];
     
+    /**
+     * 后台首页
+     * @return \Webman\Http\Response
+     */
     public function index(){
         // 获取系统监控数据
         $systemData = $this->getSystemData();
@@ -16,6 +23,7 @@ class Index extends Base{
     
     /**
      * 获取系统数据（AJAX）
+     * @return mixed
      */
     public function getSystemData()
     {
@@ -30,6 +38,7 @@ class Index extends Base{
     
     /**
      * 获取系统监控数据
+     * @return array
      */
     protected function getSystemMonitorData()
     {
@@ -56,6 +65,10 @@ class Index extends Base{
         return $data;
     }
     
+    /**
+     * 获取内存信息
+     * @return array
+     */
     protected function getMemoryInfo()
     {
         $memory = [];
@@ -81,6 +94,10 @@ class Index extends Base{
         return $memory;
     }
     
+    /**
+     * 获取 CPU 信息
+     * @return array
+     */
     protected function getCpuInfo()
     {
         $cpu = [];
@@ -93,6 +110,10 @@ class Index extends Base{
         return $cpu;
     }
     
+    /**
+     * 获取磁盘信息
+     * @return array
+     */
     protected function getDiskInfo()
     {
         $disk = [];
@@ -106,6 +127,10 @@ class Index extends Base{
         return $disk;
     }
     
+    /**
+     * 获取数据库信息
+     * @return array
+     */
     protected function getDatabaseInfo()
     {
         $db = [];
@@ -134,6 +159,12 @@ class Index extends Base{
         return $db;
     }
     
+    /**
+     * 格式化字节大小
+     * @param int $bytes 字节数
+     * @param int $precision 精度
+     * @return string
+     */
     protected function formatBytes($bytes, $precision = 2)
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -143,6 +174,10 @@ class Index extends Base{
         return round($bytes, $precision) . ' ' . $units[$i];
     }
     
+    /**
+     * 登录页面
+     * @return \Webman\Http\Response
+     */
     public function login(){
         $session = $this->request->session();
         if($this->request->method()=='POST'){
@@ -176,6 +211,10 @@ class Index extends Base{
         return $this->view('');
     }
     
+    /**
+     * 生成验证码
+     * @return \Webman\Http\Response
+     */
     public function captcha()
     {
         $builder = new PhraseBuilder(4, 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ');

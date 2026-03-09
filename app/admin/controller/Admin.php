@@ -3,7 +3,14 @@ namespace app\admin\controller;
 
 use app\admin\model\{Role,AdminRole};
 
+/**
+ * 管理员管理
+ */
 class Admin extends Base{
+    /**
+     * 管理员列表
+     * @return \support\Response
+     */
     public function index(){
         $where = [];
         $admins = $this->model->where($where)->paginate(['list_rows'=>20,'query'=>$this]);
@@ -11,6 +18,10 @@ class Admin extends Base{
         return $this->view('',['admins'=>$admins]);
     }
     
+    /**
+     * 添加管理员
+     * @return \support\Response
+     */
     public function add(){
         if($this->isPost()){
             $this->model::startTrans();
@@ -44,6 +55,10 @@ class Admin extends Base{
         return $this->view('',['roles'=>$roles]);
     }
     
+    /**
+     * 编辑管理员
+     * @return \support\Response
+     */
     public function edit(){
         $admin = $this->model::find($this->get['id']);
         $admin->hidden(['password']);
@@ -82,6 +97,10 @@ class Admin extends Base{
         return $this->view('',['roles'=>$roles,'admin'=>$admin]);
     }
     
+    /**
+     * 删除管理员
+     * @return \support\Response
+     */
     public function del(){
         if($this->isPost()){
             $this->model::startTrans();
@@ -110,6 +129,7 @@ class Admin extends Base{
     
     /**
      * 个人信息
+     * @return \support\Response
      */
     public function profile(){
         $admin = admin();
@@ -138,6 +158,7 @@ class Admin extends Base{
     
     /**
      * 修改密码
+     * @return \support\Response
      */
     public function password(){
         if($this->isPost()){

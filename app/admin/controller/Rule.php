@@ -1,14 +1,27 @@
 <?php
 namespace app\admin\controller;
 
+/**
+ * 权限规则管理控制器
+ */
 class Rule extends Base{
+    /**
+     * 规则列表
+     * @return \Webman\Http\Response
+     */
     public function index(){
         $rules = $this->model->order('sort asc,id desc')->select();
         $menus = $this->recursion_title($rules);
         return $this->view('',['menus'=>$menus]);
     }
     
-    
+    /**
+     * 递归处理标题层级
+     * @param array $list 规则列表
+     * @param int $pid 父级ID
+     * @param int $level 层级
+     * @return array
+     */
     public function recursion_title($list, $pid = 0, $level = 0)
     {
         $arr = [];
@@ -22,6 +35,10 @@ class Rule extends Base{
         return $arr;
     } 
     
+    /**
+     * 添加规则
+     * @return \Webman\Http\Response
+     */
     public function add(){
         if($this->isPost()){
             try{
@@ -42,6 +59,10 @@ class Rule extends Base{
         return $this->view('',['menus'=>$menus]);
     }
     
+    /**
+     * 编辑规则
+     * @return \Webman\Http\Response
+     */
     public function edit(){
         $rule = $this->model->find($this->get['id']);
         if($this->isPost()){
@@ -62,6 +83,10 @@ class Rule extends Base{
         return $this->view('',['rule'=>$rule,'menus'=>$menus]);
     }
     
+    /**
+     * 删除规则
+     * @return \Webman\Http\Response
+     */
     public function del(){
         if($this->isPost()){
             try{

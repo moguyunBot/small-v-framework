@@ -3,14 +3,24 @@ namespace app\admin\controller;
 
 use app\admin\model\Rule;
 
+/**
+ * 角色管理控制器
+ */
 class Role extends Base{
+    /**
+     * 角色列表
+     * @return \Webman\Http\Response
+     */
     public function index(){
         $where = [];
         $roles = $this->model->where($where)->paginate(['list_rows'=>20,'query'=>$this->get]);
         return $this->view('',['roles'=>$roles]);
     }
  
-    
+    /**
+     * 添加角色
+     * @return \Webman\Http\Response
+     */
     public function add(){
         if($this->isPost()){
             try{
@@ -34,6 +44,10 @@ class Role extends Base{
         return $this->view('',['rules'=>$rules]);
     }
     
+    /**
+     * 编辑角色
+     * @return \Webman\Http\Response
+     */
     public function edit(){
         $role = $this->model::find($this->get['id']);
         if($this->isPost()){
@@ -70,6 +84,10 @@ class Role extends Base{
         return $this->view('',['rules'=>$rules,'role'=>$role]);
     }
     
+    /**
+     * 删除角色
+     * @return \Webman\Http\Response
+     */
     public function del(){
         if($this->isPost()){
             try{

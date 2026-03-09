@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插件市场 - 科技工具平台</title>
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f1f5f9;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--darker);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* 动态背景 */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.05;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.3) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* 网格背景 */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: relative;
+            z-index: 100;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .btn-login {
+            padding: 0.6rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* 标题区域 */
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.6) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 搜索栏 */
+        .search-box {
+            max-width: 600px;
+            margin: 2rem auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.6);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 分类标签 */
+        .categories {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .category-tag {
+            padding: 0.6rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .category-tag:hover,
+        .category-tag.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.6);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* 插件网格 */
+        .plugins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        /* 插件卡片 */
+        .plugin-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .plugin-card:nth-child(1) { animation-delay: 0.1s; }
+        .plugin-card:nth-child(2) { animation-delay: 0.2s; }
+        .plugin-card:nth-child(3) { animation-delay: 0.3s; }
+        .plugin-card:nth-child(4) { animation-delay: 0.4s; }
+        .plugin-card:nth-child(5) { animation-delay: 0.5s; }
+        .plugin-card:nth-child(6) { animation-delay: 0.6s; }
+        .plugin-card:nth-child(7) { animation-delay: 0.7s; }
+        .plugin-card:nth-child(8) { animation-delay: 0.8s; }
+
+        .plugin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .plugin-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(99, 102, 241, 0.6);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+        }
+
+        .plugin-card:hover::before {
+            opacity: 1;
+        }
+
+        .plugin-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-icon i {
+            color: #fff;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .plugin-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-category {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-description {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .plugin-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-coming .status-dot {
+            background: #f59e0b;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .plugins-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景动画 -->
+    <div class="bg-animation"></div>
+    <div class="grid-bg"></div>
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="mdi mdi-cube-outline"></i>
+            插件市场
+        </div>
+        <div class="nav-links">
+            <a href="#" class="nav-link">首页</a>
+            <a href="#" class="nav-link">插件</a>
+            <a href="#" class="nav-link">文档</a>
+            <a href="#" class="nav-link">关于</a>
+            <a href="/admin" class="btn-login">登录</a>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 标题区域 -->
+        <div class="hero">
+            <h1>探索强大的工具插件</h1>
+            <p>一站式工具平台，为您提供各种实用插件，提升工作效率</p>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="搜索插件..." id="searchInput">
+            <i class="mdi mdi-magnify search-icon"></i>
+        </div>
+
+        <!-- 分类标签 -->
+        <div class="categories">
+            <div class="category-tag active" data-category="all">全部</div>
+            <div class="category-tag" data-category="AI工具">AI工具</div>
+            <div class="category-tag" data-category="开发工具">开发工具</div>
+            <div class="category-tag" data-category="图像工具">图像工具</div>
+            <div class="category-tag" data-category="办公工具">办公工具</div>
+            <div class="category-tag" data-category="数据工具">数据工具</div>
+            <div class="category-tag" data-category="媒体工具">媒体工具</div>
+        </div>
+
+        <!-- 插件网格 -->
+        <div class="plugins-grid" id="pluginsGrid">
+            <?php foreach($plugins as $plugin): ?>
+            <div class="plugin-card" data-category="<?= $plugin['category'] ?>" data-name="<?= $plugin['name'] ?>" onclick="window.location.href='<?= $plugin['url'] ?>'">
+                <div class="plugin-icon" style="background: <?= $plugin['color'] ?>">
+                    <i class="mdi <?= $plugin['icon'] ?>"></i>
+                </div>
+                <div class="plugin-name"><?= $plugin['name'] ?></div>
+                <div class="plugin-category"><?= $plugin['category'] ?></div>
+                <div class="plugin-description"><?= $plugin['description'] ?></div>
+                <div class="plugin-status <?= $plugin['status'] === 'coming' ? 'status-coming' : '' ?>">
+                    <span class="status-dot"></span>
+                    <span><?= $plugin['status'] === 'active' ? '可用' : '即将推出' ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <script>
+        // 分类筛选
+        const categoryTags = document.querySelectorAll('.category-tag');
+        const pluginCards = document.querySelectorAll('.plugin-card');
+
+        categoryTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                const category = tag.dataset.category;
+                
+                // 更新激活状态
+                categoryTags.forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                
+                // 筛选插件
+                pluginCards.forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // 搜索功能
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase();
+            
+            pluginCards.forEach(card => {
+                const name = card.dataset.name.toLowerCase();
+                if (name.includes(keyword)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
