@@ -12,12 +12,12 @@
         <ul class="nav nav-tabs mb-3" role="tablist">
           <li class="nav-item">
             <a class="nav-link" :class="{active: activeTab === 'timestamp'}" @click="activeTab = 'timestamp'" href="javascript:void(0)">
-              <i class="mdi mdi-clock-outline"></i> 时间戳转换
+              <i class="mdi mdi-clock-outline"></i> 时间戳
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" :class="{active: activeTab === 'json'}" @click="activeTab = 'json'" href="javascript:void(0)">
-              <i class="mdi mdi-code-json"></i> JSON 工具
+              <i class="mdi mdi-code-json"></i> JSON
             </a>
           </li>
           <li class="nav-item">
@@ -27,17 +27,27 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" :class="{active: activeTab === 'hash'}" @click="activeTab = 'hash'" href="javascript:void(0)">
-              <i class="mdi mdi-lock"></i> 加密哈希
+              <i class="mdi mdi-lock"></i> 哈希
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" :class="{active: activeTab === 'url'}" @click="activeTab = 'url'" href="javascript:void(0)">
-              <i class="mdi mdi-link"></i> URL 编解码
+              <i class="mdi mdi-link"></i> URL
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" :class="{active: activeTab === 'regex'}" @click="activeTab = 'regex'" href="javascript:void(0)">
-              <i class="mdi mdi-regex"></i> 正则测试
+              <i class="mdi mdi-regex"></i> 正则
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'code'}" @click="activeTab = 'code'" href="javascript:void(0)">
+              <i class="mdi mdi-code-braces"></i> 代码
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'color'}" @click="activeTab = 'color'" href="javascript:void(0)">
+              <i class="mdi mdi-palette"></i> 颜色
             </a>
           </li>
         </ul>
@@ -239,6 +249,123 @@
             未找到匹配项
           </div>
         </div>
+        
+        <!-- 代码工具 -->
+        <div v-show="activeTab === 'code'">
+          <ul class="nav nav-pills mb-3">
+            <li class="nav-item">
+              <a class="nav-link" :class="{active: code.subTab === 'js'}" @click="code.subTab = 'js'" href="javascript:void(0)">JS 加密</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" :class="{active: code.subTab === 'php'}" @click="code.subTab = 'php'" href="javascript:void(0)">PHP 加密</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" :class="{active: code.subTab === 'unicode'}" @click="code.subTab = 'unicode'" href="javascript:void(0)">Unicode</a>
+            </li>
+          </ul>
+          
+          <!-- JS 加密 -->
+          <div v-show="code.subTab === 'js'">
+            <div class="mb-3">
+              <label class="form-label">JavaScript 代码</label>
+              <textarea class="form-control" v-model="code.js.input" rows="8" placeholder="输入 JavaScript 代码" style="font-family: 'Courier New', monospace;"></textarea>
+            </div>
+            <button class="btn btn-primary" @click="encodeJs">加密混淆</button>
+            <div v-if="code.js.result" class="mt-3">
+              <label class="form-label">加密结果</label>
+              <textarea class="form-control" v-model="code.js.result" rows="8" readonly style="font-family: 'Courier New', monospace;"></textarea>
+            </div>
+          </div>
+          
+          <!-- PHP 加密 -->
+          <div v-show="code.subTab === 'php'">
+            <div class="mb-3">
+              <label class="form-label">PHP 代码</label>
+              <textarea class="form-control" v-model="code.php.input" rows="8" placeholder="输入 PHP 代码" style="font-family: 'Courier New', monospace;"></textarea>
+            </div>
+            <button class="btn btn-primary" @click="encodePhp">Base64 编码</button>
+            <div v-if="code.php.result" class="mt-3">
+              <label class="form-label">编码结果</label>
+              <textarea class="form-control" v-model="code.php.result" rows="8" readonly style="font-family: 'Courier New', monospace;"></textarea>
+              <small class="text-muted">使用方式: eval(base64_decode('编码结果'));</small>
+            </div>
+          </div>
+          
+          <!-- Unicode 转换 -->
+          <div v-show="code.subTab === 'unicode'">
+            <div class="row">
+              <div class="col-md-6">
+                <h6>文本转 Unicode</h6>
+                <div class="mb-3">
+                  <label class="form-label">原始文本</label>
+                  <textarea class="form-control" v-model="code.unicode.encode.input" rows="6" placeholder="输入文本"></textarea>
+                </div>
+                <button class="btn btn-primary" @click="textToUnicode">转换</button>
+                <div v-if="code.unicode.encode.result" class="mt-3">
+                  <label class="form-label">Unicode 结果</label>
+                  <textarea class="form-control" v-model="code.unicode.encode.result" rows="6" readonly></textarea>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6>Unicode 转文本</h6>
+                <div class="mb-3">
+                  <label class="form-label">Unicode 字符串</label>
+                  <textarea class="form-control" v-model="code.unicode.decode.input" rows="6" placeholder="输入 Unicode (如: \u4e2d\u6587)"></textarea>
+                </div>
+                <button class="btn btn-primary" @click="unicodeToText">转换</button>
+                <div v-if="code.unicode.decode.result" class="mt-3">
+                  <label class="form-label">文本结果</label>
+                  <textarea class="form-control" v-model="code.unicode.decode.result" rows="6" readonly></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 颜色工具 -->
+        <div v-show="activeTab === 'color'">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>颜色转换</h6>
+              <div class="mb-3">
+                <label class="form-label">HEX 颜色</label>
+                <div class="input-group">
+                  <input type="color" class="form-control form-control-color" v-model="color.hex" @input="hexToRgb">
+                  <input type="text" class="form-control" v-model="color.hex" @input="hexToRgb" placeholder="#000000">
+                </div>
+              </div>
+              <div v-if="color.rgb" class="mb-3">
+                <label class="form-label">RGB</label>
+                <input type="text" class="form-control" v-model="color.rgb" readonly>
+              </div>
+              <div v-if="color.rgba" class="mb-3">
+                <label class="form-label">RGBA</label>
+                <input type="text" class="form-control" v-model="color.rgba" readonly>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6>颜色预览</h6>
+              <div class="border rounded p-4 text-center" :style="{backgroundColor: color.hex, height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center'}">
+                <span :style="{color: getContrastColor(color.hex), fontSize: '24px', fontWeight: 'bold'}">
+                  {{ color.hex }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <h6>常用颜色</h6>
+            <div class="d-flex flex-wrap gap-2">
+              <div v-for="c in commonColors" :key="c" 
+                   class="border rounded p-2 text-center" 
+                   style="width: 80px; cursor: pointer;"
+                   @click="selectColor(c)">
+                <div class="rounded mb-1" :style="{backgroundColor: c, height: '40px'}"></div>
+                <small>{{ c }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -305,8 +432,43 @@ createVueApp({
         matches: [],
         error: '',
         noMatch: false
-      }
+      },
+      code: {
+        subTab: 'js',
+        js: {
+          input: '',
+          result: ''
+        },
+        php: {
+          input: '',
+          result: ''
+        },
+        unicode: {
+          encode: {
+            input: '',
+            result: ''
+          },
+          decode: {
+            input: '',
+            result: ''
+          }
+        }
+      },
+      color: {
+        hex: '#3498db',
+        rgb: '',
+        rgba: ''
+      },
+      commonColors: [
+        '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff',
+        '#ffff00', '#ff00ff', '#00ffff', '#808080', '#c0c0c0',
+        '#800000', '#808000', '#008000', '#800080', '#008080',
+        '#000080', '#3498db', '#e74c3c', '#2ecc71', '#f39c12'
+      ]
     };
+  },
+  mounted() {
+    this.hexToRgb();
   },
   methods: {
     // 时间戳转日期
@@ -475,6 +637,90 @@ createVueApp({
         this.regex.matches = [];
         this.regex.noMatch = false;
       }
+    },
+    
+    // JS 加密混淆
+    encodeJs() {
+      if (!this.code.js.input) {
+        layer.msg('请输入 JavaScript 代码', { icon: 0 });
+        return;
+      }
+      
+      // 简单的 JS 混淆：转换为 Unicode 编码
+      let result = '';
+      for (let i = 0; i < this.code.js.input.length; i++) {
+        result += '\\u' + ('0000' + this.code.js.input.charCodeAt(i).toString(16)).slice(-4);
+      }
+      this.code.js.result = 'eval("' + result + '")';
+    },
+    
+    // PHP Base64 编码
+    encodePhp() {
+      if (!this.code.php.input) {
+        layer.msg('请输入 PHP 代码', { icon: 0 });
+        return;
+      }
+      this.code.php.result = btoa(unescape(encodeURIComponent(this.code.php.input)));
+    },
+    
+    // 文本转 Unicode
+    textToUnicode() {
+      if (!this.code.unicode.encode.input) {
+        layer.msg('请输入文本', { icon: 0 });
+        return;
+      }
+      
+      let result = '';
+      for (let i = 0; i < this.code.unicode.encode.input.length; i++) {
+        result += '\\u' + ('0000' + this.code.unicode.encode.input.charCodeAt(i).toString(16)).slice(-4);
+      }
+      this.code.unicode.encode.result = result;
+    },
+    
+    // Unicode 转文本
+    unicodeToText() {
+      if (!this.code.unicode.decode.input) {
+        layer.msg('请输入 Unicode', { icon: 0 });
+        return;
+      }
+      
+      try {
+        this.code.unicode.decode.result = this.code.unicode.decode.input.replace(/\\u[\dA-F]{4}/gi, 
+          match => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16))
+        );
+      } catch (e) {
+        layer.msg('转换失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    // HEX 转 RGB
+    hexToRgb() {
+      const hex = this.color.hex.replace('#', '');
+      
+      if (hex.length === 6) {
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        this.color.rgb = `rgb(${r}, ${g}, ${b})`;
+        this.color.rgba = `rgba(${r}, ${g}, ${b}, 1)`;
+      }
+    },
+    
+    // 选择颜色
+    selectColor(color) {
+      this.color.hex = color;
+      this.hexToRgb();
+    },
+    
+    // 获取对比色（用于文字显示）
+    getContrastColor(hex) {
+      const rgb = parseInt(hex.replace('#', ''), 16);
+      const r = (rgb >> 16) & 0xff;
+      const g = (rgb >>  8) & 0xff;
+      const b = (rgb >>  0) & 0xff;
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      return luma < 128 ? '#ffffff' : '#000000';
     }
   }
 }).mount('#app');

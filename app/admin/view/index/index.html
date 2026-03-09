@@ -72,6 +72,158 @@
   </div>
 </div>
 
+<!-- 系统信息卡片 -->
+<div class="row mb-3">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-information"></i> 系统信息</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <!-- PHP 信息 -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2"><i class="mdi mdi-language-php"></i> PHP 信息</h6>
+            <table class="table table-sm table-borderless">
+              <tr>
+                <td width="40%" class="text-muted">PHP 版本</td>
+                <td><strong>{:PHP_VERSION}</strong></td>
+              </tr>
+              <tr>
+                <td class="text-muted">运行方式</td>
+                <td>{:php_sapi_name()}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">最大执行时间</td>
+                <td>{:ini_get('max_execution_time')} 秒</td>
+              </tr>
+              <tr>
+                <td class="text-muted">内存限制</td>
+                <td>{:ini_get('memory_limit')}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">上传限制</td>
+                <td>{:ini_get('upload_max_filesize')}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">POST 限制</td>
+                <td>{:ini_get('post_max_size')}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- 服务器信息 -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2"><i class="mdi mdi-server"></i> 服务器信息</h6>
+            <table class="table table-sm table-borderless">
+              <tr>
+                <td width="40%" class="text-muted">操作系统</td>
+                <td>{php}
+                // 尝试获取 Linux 发行版信息
+                if (file_exists('/etc/os-release')) {
+                  $os_info = parse_ini_file('/etc/os-release');
+                  echo isset($os_info['PRETTY_NAME']) ? $os_info['PRETTY_NAME'] : php_uname('s') . ' ' . php_uname('r');
+                } else {
+                  echo php_uname('s') . ' ' . php_uname('r');
+                }
+                {/php}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">服务器软件</td>
+                <td>{php}echo isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Webman/Workerman';{/php}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">服务器IP</td>
+                <td>{php}
+                // 尝试多种方式获取 IP
+                if (isset($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR']) {
+                  echo $_SERVER['SERVER_ADDR'];
+                } elseif (isset($_SERVER['LOCAL_ADDR']) && $_SERVER['LOCAL_ADDR']) {
+                  echo $_SERVER['LOCAL_ADDR'];
+                } else {
+                  // 通过命令获取
+                  $ip = shell_exec("hostname -I | awk '{print $1}'");
+                  if ($ip) {
+                    echo trim($ip);
+                  } else {
+                    $ip = gethostbyname(gethostname());
+                    echo $ip != gethostname() ? $ip : '127.0.0.1';
+                  }
+                }
+                {/php}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">监听端口</td>
+                <td>{php}
+                // 从 process.php 配置文件获取端口
+                $config_file = base_path() . '/config/process.php';
+                if (file_exists($config_file)) {
+                  $config = include $config_file;
+                  if (isset($config['webman']['listen'])) {
+                    $port = parse_url($config['webman']['listen'], PHP_URL_PORT);
+                    echo $port ? $port : '8787';
+                  } else {
+                    echo '8787';
+                  }
+                } else {
+                  echo isset($_SERVER['SERVER_PORT']) ? $_SERVER['SERVER_PORT'] : '8787';
+                }
+                {/php}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">项目根目录</td>
+                <td><small>{:base_path()}</small></td>
+              </tr>
+              <tr>
+                <td class="text-muted">当前时间</td>
+                <td>{:date('Y-m-d H:i:s')}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- 框架信息 -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2"><i class="mdi mdi-application"></i> 框架信息</h6>
+            <table class="table table-sm table-borderless">
+              <tr>
+                <td width="40%" class="text-muted">Webman 版本</td>
+                <td><strong>{php}echo defined('WEBMAN_VERSION') ? WEBMAN_VERSION : (class_exists('Webman\App') ? '已安装' : '未知');{/php}</strong></td>
+              </tr>
+              <tr>
+                <td class="text-muted">ThinkORM 版本</td>
+                <td>{php}echo class_exists('think\facade\Db') ? '已安装' : '未安装';{/php}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">项目路径</td>
+                <td><small>{:base_path()}</small></td>
+              </tr>
+              <tr>
+                <td class="text-muted">运行时路径</td>
+                <td><small>{:runtime_path()}</small></td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- PHP 扩展 -->
+          <div class="col-md-6 mb-3">
+            <h6 class="border-bottom pb-2"><i class="mdi mdi-puzzle"></i> PHP 扩展</h6>
+            <div style="max-height: 200px; overflow-y: auto;">
+              <div class="d-flex flex-wrap gap-1">
+                {php}
+                $extensions = get_loaded_extensions();
+                foreach ($extensions as $ext) {
+                  echo '<span class="badge bg-secondary">' . $ext . '</span> ';
+                }
+                {/php}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {/block}
 {block name="script"}
 <script>

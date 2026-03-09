@@ -1,0 +1,297 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-speedometer"></i> 性能分析</h5>
+      </div>
+      <div class="card-body">
+        <!-- 标签页 -->
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'memory'}" @click="switchTab('memory')" href="javascript:void(0)">
+              <i class="mdi mdi-memory"></i> 内存使用
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'opcache'}" @click="switchTab('opcache')" href="javascript:void(0)">
+              <i class="mdi mdi-flash"></i> OPcache
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'slow_queries'}" @click="switchTab('slow_queries')" href="javascript:void(0)">
+              <i class="mdi mdi-database-clock"></i> 慢查询
+            </a>
+          </li>
+        </ul>
+        
+        <!-- 内存使用 -->
+        <div v-show="activeTab === 'memory'">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="card bg-primary bg-opacity-10">
+                <div class="card-body text-center">
+                  <i class="mdi mdi-memory text-primary fs-1"></i>
+                  <h6 class="mt-2">当前内存使用</h6>
+                  <h4 class="mb-0">{{ memory.current_format }}</h4>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-warning bg-opacity-10">
+                <div class="card-body text-center">
+                  <i class="mdi mdi-chart-line text-warning fs-1"></i>
+                  <h6 class="mt-2">峰值内存使用</h6>
+                  <h4 class="mb-0">{{ memory.peak_format }}</h4>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-info bg-opacity-10">
+                <div class="card-body text-center">
+                  <i class="mdi mdi-cog text-info fs-1"></i>
+                  <h6 class="mt-2">内存限制</h6>
+                  <h4 class="mb-0">{{ memory.limit }}</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info mt-3">
+            <h6><i class="mdi mdi-information"></i> 说明</h6>
+            <ul class="mb-0">
+              <li><strong>当前内存使用：</strong>当前 PHP 进程使用的内存</li>
+              <li><strong>峰值内存使用：</strong>PHP 进程使用过的最大内存</li>
+              <li><strong>内存限制：</strong>php.ini 中配置的 memory_limit</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- OPcache -->
+        <div v-show="activeTab === 'opcache'">
+          <div v-if="opcache.enabled">
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <div class="card bg-success bg-opacity-10">
+                  <div class="card-body text-center">
+                    <i class="mdi mdi-check-circle text-success fs-1"></i>
+                    <h6 class="mt-2">缓存命中率</h6>
+                    <h4 class="mb-0">{{ opcache.statistics.hit_rate }}%</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-primary bg-opacity-10">
+                  <div class="card-body text-center">
+                    <i class="mdi mdi-file-code text-primary fs-1"></i>
+                    <h6 class="mt-2">缓存脚本数</h6>
+                    <h4 class="mb-0">{{ opcache.statistics.num_cached_scripts }}</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-info bg-opacity-10">
+                  <div class="card-body text-center">
+                    <i class="mdi mdi-thumb-up text-info fs-1"></i>
+                    <h6 class="mt-2">命中次数</h6>
+                    <h4 class="mb-0">{{ opcache.statistics.hits }}</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card bg-warning bg-opacity-10">
+                  <div class="card-body text-center">
+                    <i class="mdi mdi-thumb-down text-warning fs-1"></i>
+                    <h6 class="mt-2">未命中次数</h6>
+                    <h4 class="mb-0">{{ opcache.statistics.misses }}</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <h6>内存使用情况</h6>
+            <table class="table table-bordered">
+              <tr>
+                <td width="25%">已使用内存</td>
+                <td>{{ opcache.memory_usage.used_format }}</td>
+              </tr>
+              <tr>
+                <td>空闲内存</td>
+                <td>{{ opcache.memory_usage.free_format }}</td>
+              </tr>
+              <tr>
+                <td>浪费内存</td>
+                <td>{{ opcache.memory_usage.wasted_format }} ({{ opcache.memory_usage.usage_percent }}%)</td>
+              </tr>
+            </table>
+          </div>
+          <div v-else class="alert alert-warning">
+            <i class="mdi mdi-alert"></i> {{ opcache.message }}
+          </div>
+        </div>
+        
+        <!-- 慢查询 -->
+        <div v-show="activeTab === 'slow_queries'">
+          <div v-if="slowQueries.enabled">
+            <div class="alert alert-info">
+              <strong>慢查询日志已启用</strong><br>
+              日志文件: {{ slowQueries.log_file }}<br>
+              慢查询时间阈值: {{ slowQueries.long_query_time }} 秒
+            </div>
+            
+            <div v-if="slowQueries.queries.length > 0">
+              <h6>最近的慢查询（最多显示 20 条）</h6>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th width="15%">时间</th>
+                      <th width="10%">查询时间</th>
+                      <th>SQL 语句</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(query, index) in slowQueries.queries" :key="index">
+                      <td><small>{{ query.time }}</small></td>
+                      <td><span class="badge bg-danger">{{ query.query_time }}s</span></td>
+                      <td><code style="font-size: 12px;">{{ query.query }}</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div v-else class="alert alert-success">
+              <i class="mdi mdi-check-circle"></i> 暂无慢查询记录
+            </div>
+          </div>
+          <div v-else class="alert alert-warning">
+            <h6><i class="mdi mdi-alert"></i> 慢查询日志未启用</h6>
+            <p class="mb-0">请在 MySQL 配置文件中启用慢查询日志：</p>
+            <pre class="mt-2 mb-0">slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow-query.log
+long_query_time = 2</pre>
+          </div>
+          <div v-if="slowQueries.error" class="alert alert-danger mt-3">
+            <strong>错误：</strong>{{ slowQueries.error }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      activeTab: 'memory',
+      memory: {
+        current_format: '0 B',
+        peak_format: '0 B',
+        limit: '0',
+        real_usage_format: '0 B'
+      },
+      opcache: {
+        enabled: false,
+        message: '',
+        memory_usage: {},
+        statistics: {}
+      },
+      slowQueries: {
+        enabled: false,
+        log_file: '',
+        long_query_time: '10',
+        queries: [],
+        error: ''
+      }
+    };
+  },
+  mounted() {
+    this.loadMemoryUsage();
+  },
+  methods: {
+    switchTab(tab) {
+      this.activeTab = tab;
+      
+      if (tab === 'memory') {
+        this.loadMemoryUsage();
+      } else if (tab === 'opcache') {
+        this.loadOpcacheStatus();
+      } else if (tab === 'slow_queries') {
+        this.loadSlowQueries();
+      }
+    },
+    
+    async loadMemoryUsage() {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('performance', { action: 'memory_usage' });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.memory = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    async loadOpcacheStatus() {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('performance', { action: 'opcache_status' });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.opcache = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    async loadSlowQueries() {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('performance', { action: 'slow_queries' });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.slowQueries = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

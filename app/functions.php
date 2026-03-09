@@ -385,3 +385,127 @@ function get_config($key, $default = null)
     
     return \app\admin\model\Config::getConfigValue('', $groupKey, $configKey, $default);
 }
+
+/**
+ * CURL 请求函数
+ * @param string $url 请求地址
+ * @param array|string $data 请求参数
+ * @param string $method 请求方式 GET/POST/PUT/DELETE
+ * @param array $headers 请求头
+ * @param bool $returnCookie 是否返回 Cookie
+ * @param int $timeout 超时时间（秒）
+ * @return array ['code' => 状态码, 'data' => 响应内容, 'cookie' => Cookie信息, 'error' => 错误信息]
+ */
+function curl_request($url, $data = [], $method = 'GET', $headers = [], $returnCookie = false, $timeout = 30)
+{
+    $ch = curl_init();
+    
+    // 设置请求方式
+    $method = strtoupper($method);
+    
+    // 处理 GET 请求参数
+    if ($method === 'GET' && !empty($data)) {
+        $query = is_array($data) ? http_build_query($data) : $data;
+        $url .= (strpos($url, '?') === false ? '?' : '&') . $query;
+    }
+    
+    // 基本配置
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+    
+    // 设置请求方式
+    switch ($method) {
+        case 'POST':
+            curl_setopt($ch, CURLOPT_POST, true);
+            if (!empty($data)) {
+                // 如果 headers 中包含 application/json，则发送 JSON
+                $isJson = false;
+                foreach ($headers as $header) {
+                    if (stripos($header, 'application/json') !== false) {
+                        $isJson = true;
+                        break;
+                    }
+                }
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $isJson ? json_encode($data) : $data);
+            }
+            break;
+        case 'PUT':
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            if (!empty($data)) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, is_array($data) ? http_build_query($data) : $data);
+            }
+            break;
+        case 'DELETE':
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            if (!empty($data)) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, is_array($data) ? http_build_query($data) : $data);
+            }
+            break;
+        case 'GET':
+        default:
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            break;
+    }
+    
+    // 设置请求头
+    if (!empty($headers)) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    }
+    
+    // 是否返回 Cookie
+    if ($returnCookie) {
+        curl_setopt($ch, CURLOPT_HEADER, true);
+    }
+    
+    // 执行请求
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    
+    $result = [
+        'code' => $httpCode,
+        'data' => '',
+        'cookie' => '',
+        'error' => $error
+    ];
+    
+    // 处理响应
+    if ($response !== false) {
+        if ($returnCookie) {
+            // 分离 header 和 body
+            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $header = substr($response, 0, $headerSize);
+            $body = substr($response, $headerSize);
+            
+            // 提取 Cookie
+            preg_match_all('/Set-Cookie:\s*([^;]+)/i', $header, $matches);
+            $result['cookie'] = isset($matches[1]) ? implode('; ', $matches[1]) : '';
+            $result['data'] = $body;
+        } else {
+            $result['data'] = $response;
+        }
+        
+        // 判断是否为 JSON 格式，如果是则自动转换为数组
+        if (is_string($result['data']) && !empty($result['data'])) {
+            $trimmed = trim($result['data']);
+            // 检查是否以 { 或 [ 开头（JSON 对象或数组）
+            if (($trimmed[0] === '{' || $trimmed[0] === '[')) {
+                $decoded = json_decode($result['data'], true);
+                // 只有在成功解码且没有错误时才替换
+                if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+                    $result['data'] = $decoded;
+                }
+            }
+        }
+    }
+    
+    curl_close($ch);
+    
+    return $result;
+}

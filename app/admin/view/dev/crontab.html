@@ -1,0 +1,146 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-clock-outline"></i> 计划任务管理</h5>
+      </div>
+      <div class="card-body">
+        <!-- 宝塔任务列表 -->
+        <div v-if="btTasks.error" class="alert alert-warning">
+          <i class="mdi mdi-alert"></i> {{ btTasks.error }}
+        </div>
+        
+        <div v-else class="table-responsive">
+          <table class="table table-hover table-sm">
+            <thead>
+              <tr>
+                <th width="3%">#</th>
+                <th width="25%">任务名称</th>
+                <th width="12%">类型</th>
+                <th width="20%">执行周期</th>
+                <th width="12%">状态</th>
+                <th width="18%">创建时间</th>
+                <th width="10%">操作</th>
+              </tr>
+            </thead>
+            <tbody style="font-size: 13px;">
+              <tr v-for="(task, index) in btTasks.tasks" :key="task.id">
+                <td>{{ index + 1 }}</td>
+                <td><strong>{{ task.name }}</strong></td>
+                <td><span class="badge bg-info">{{ task.type }}</span></td>
+                <td>{{ task.cycle }}</td>
+                <td>
+                  <span v-if="task.disabled" class="badge bg-secondary">已禁用</span>
+                  <span v-else class="badge bg-success">{{ task.status }}</span>
+                </td>
+                <td><small>{{ task.addtime }}</small></td>
+                <td>
+                  <a href="javascript:;" class="text-info" @click="showLog(task)">日志</a>
+                </td>
+              </tr>
+              <tr v-if="btTasks.tasks.length === 0">
+                <td colspan="7" class="text-center text-muted">暂无宝塔任务</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 日志模态框 -->
+<div class="modal fade" id="logModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">任务日志</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <pre style="max-height: 500px; overflow-y: auto; background: #f5f5f5; padding: 15px;">{{ taskLog }}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      btTasks: {
+        error: '',
+        tasks: []
+      },
+      taskLog: '',
+      logModal: null
+    };
+  },
+  mounted() {
+    this.loadBtTasks();
+    this.logModal = new bootstrap.Modal(document.getElementById('logModal'));
+  },
+  methods: {
+    async loadBtTasks() {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('crontab', { action: 'bt_list' });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.btTasks = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    // 显示日志
+    async showLog(task) {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('crontab', {
+          action: 'log',
+          echo: task.echo
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.taskLog = res.data || '暂无日志';
+          this.logModal.show();
+        } else {
+          layer.msg(res.msg || '获取日志失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('获取日志失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}

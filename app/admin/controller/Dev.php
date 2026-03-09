@@ -260,6 +260,318 @@ class Dev extends Base
     }
     
     /**
+     * 性能分析
+     * @return \Webman\Http\Response
+     */
+    public function performance()
+    {
+        if ($this->isPost()) {
+            $action = $this->post['action'] ?? '';
+            
+            try {
+                switch ($action) {
+                    case 'slow_queries':
+                        $queries = $this->getSlowQueries();
+                        return json(['code' => 0, 'data' => $queries]);
+                        
+                    case 'memory_usage':
+                        $memory = $this->getMemoryUsage();
+                        return json(['code' => 0, 'data' => $memory]);
+                        
+                    case 'opcache_status':
+                        $opcache = $this->getOpcacheStatus();
+                        return json(['code' => 0, 'data' => $opcache]);
+                        
+                    default:
+                        return error('未知操作');
+                }
+            } catch (\Exception $e) {
+                return error($e->getMessage());
+            }
+        }
+        
+        return $this->view('dev/performance');
+    }
+    
+    /**
+     * 计划任务管理
+     * @return \Webman\Http\Response
+     */
+    public function crontab()
+    {
+        if ($this->isPost()) {
+            $action = $this->post['action'] ?? '';
+            
+            try {
+                switch ($action) {
+                    case 'bt_list':
+                        $tasks = $this->getBaoTaCrontabList();
+                        return json(['code' => 0, 'data' => $tasks]);
+                        
+                    case 'log':
+                        $echo = $this->post['echo'] ?? '';
+                        $log = $this->getBtTaskLog($echo);
+                        return json(['code' => 0, 'data' => $log]);
+                        
+                    default:
+                        return error('未知操作');
+                }
+            } catch (\Exception $e) {
+                return error($e->getMessage());
+            }
+        }
+        
+        return $this->view('dev/crontab');
+    }
+    
+    /**
+     * 获取宝塔计划任务列表
+     */
+    protected function getBaoTaCrontabList()
+    {
+        $dbFile = '/www/server/panel/data/db/crontab.db';
+        
+        if (!file_exists($dbFile)) {
+            return [
+                'error' => '宝塔计划任务数据库不存在',
+                'tasks' => []
+            ];
+        }
+        
+        if (!class_exists('SQLite3')) {
+            return [
+                'error' => 'SQLite3 扩展未安装',
+                'tasks' => []
+            ];
+        }
+        
+        try {
+            $db = new \SQLite3($dbFile, SQLITE3_OPEN_READONLY);
+            $result = $db->query("SELECT * FROM crontab ORDER BY id DESC");
+            
+            $tasks = [];
+            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                // 构建宝塔风格的执行周期显示
+                $cycle = $this->getBtCycleText($row);
+                
+                // 获取执行内容
+                $command = '';
+                if (!empty($row['sBody'])) {
+                    $command = $row['sBody'];
+                } elseif (!empty($row['urladdress'])) {
+                    $command = '访问 URL: ' . $row['urladdress'];
+                } else {
+                    $command = $row['sName'] ?: '未知';
+                }
+                
+                $tasks[] = [
+                    'id' => $row['id'],
+                    'name' => $row['name'],
+                    'type' => $this->getBtTaskType($row['type']),
+                    'cycle' => $cycle,
+                    'command' => $command,
+                    'status' => $row['status'] == 1 ? '运行中' : '已禁用',
+                    'disabled' => $row['status'] != 1,
+                    'addtime' => $row['addtime'],
+                    'echo' => $row['echo'],
+                    'where1' => $row['where1'],
+                    'where_hour' => $row['where_hour'],
+                    'where_minute' => $row['where_minute']
+                ];
+            }
+            
+            $db->close();
+            
+            return [
+                'error' => '',
+                'tasks' => $tasks
+            ];
+        } catch (\Exception $e) {
+            return [
+                'error' => '读取宝塔数据库失败: ' . $e->getMessage(),
+                'tasks' => []
+            ];
+        }
+    }
+    
+    /**
+     * 获取宝塔风格的执行周期文本
+     */
+    protected function getBtCycleText($row)
+    {
+        $type = $row['type'];
+        $where1 = $row['where1'];
+        $hour = $row['where_hour'];
+        $minute = $row['where_minute'];
+        
+        switch ($type) {
+            case 'day':
+                return sprintf('每天 %02d:%02d', $hour, $minute);
+            case 'hour':
+                return sprintf('每小时 第%d分钟', $minute);
+            case 'minute-n':
+                return sprintf('每%d分钟', $where1);
+            case 'week':
+                $weeks = ['日', '一', '二', '三', '四', '五', '六'];
+                $weekText = isset($weeks[$where1]) ? $weeks[$where1] : $where1;
+                return sprintf('每周%s %02d:%02d', $weekText, $hour, $minute);
+            case 'month':
+                return sprintf('每月%d日 %02d:%02d', $where1, $hour, $minute);
+            default:
+                return sprintf('%02d:%02d', $hour, $minute);
+        }
+    }
+    
+    /**
+     * 获取任务日志
+     */
+    protected function getBtTaskLog($echo)
+    {
+        $logFile = "/www/server/cron/{$echo}.log";
+        
+        if (!file_exists($logFile)) {
+            return '暂无日志';
+        }
+        
+        // 读取最后 1000 行
+        $lines = shell_exec("tail -n 1000 {$logFile}");
+        return $lines ?: '暂无日志';
+    }
+    
+    /**
+     * 获取宝塔任务类型名称
+     */
+    protected function getBtTaskType($type)
+    {
+        $types = [
+            'day' => '每天',
+            'day-n' => '每N天',
+            'hour' => '每小时',
+            'hour-n' => '每N小时',
+            'minute-n' => '每N分钟',
+            'week' => '每周',
+            'month' => '每月'
+        ];
+        
+        return $types[$type] ?? $type;
+    }
+    
+    /**
+     * 获取计划任务列表
+     */
+    /**
+     * 获取慢查询
+     */
+    protected function getSlowQueries()
+    {
+        try {
+            // 检查慢查询日志是否开启
+            $slowLogStatus = \think\facade\Db::query("SHOW VARIABLES LIKE 'slow_query_log'");
+            $slowLogFile = \think\facade\Db::query("SHOW VARIABLES LIKE 'slow_query_log_file'");
+            $longQueryTime = \think\facade\Db::query("SHOW VARIABLES LIKE 'long_query_time'");
+            
+            $result = [
+                'enabled' => isset($slowLogStatus[0]['Value']) && $slowLogStatus[0]['Value'] === 'ON',
+                'log_file' => isset($slowLogFile[0]['Value']) ? $slowLogFile[0]['Value'] : '',
+                'long_query_time' => isset($longQueryTime[0]['Value']) ? $longQueryTime[0]['Value'] : '10',
+                'queries' => []
+            ];
+            
+            // 如果开启了慢查询日志，尝试读取
+            if ($result['enabled'] && file_exists($result['log_file'])) {
+                $content = file_get_contents($result['log_file']);
+                $lines = explode("\n", $content);
+                $queries = [];
+                $currentQuery = null;
+                
+                foreach ($lines as $line) {
+                    if (strpos($line, '# Time:') === 0) {
+                        if ($currentQuery) {
+                            $queries[] = $currentQuery;
+                        }
+                        $currentQuery = ['time' => trim(substr($line, 7)), 'query' => ''];
+                    } elseif ($currentQuery && strpos($line, '# Query_time:') === 0) {
+                        preg_match('/Query_time: ([\d.]+)/', $line, $matches);
+                        $currentQuery['query_time'] = isset($matches[1]) ? $matches[1] : '0';
+                    } elseif ($currentQuery && $line && $line[0] !== '#') {
+                        $currentQuery['query'] .= $line . ' ';
+                    }
+                }
+                
+                if ($currentQuery) {
+                    $queries[] = $currentQuery;
+                }
+                
+                $result['queries'] = array_slice(array_reverse($queries), 0, 20);
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            return [
+                'enabled' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * 获取内存使用情况
+     */
+    protected function getMemoryUsage()
+    {
+        return [
+            'current' => memory_get_usage(true),
+            'current_format' => $this->formatBytes(memory_get_usage(true)),
+            'peak' => memory_get_peak_usage(true),
+            'peak_format' => $this->formatBytes(memory_get_peak_usage(true)),
+            'limit' => ini_get('memory_limit'),
+            'real_usage' => memory_get_usage(false),
+            'real_usage_format' => $this->formatBytes(memory_get_usage(false))
+        ];
+    }
+    
+    /**
+     * 获取 OPcache 状态
+     */
+    protected function getOpcacheStatus()
+    {
+        if (!function_exists('opcache_get_status')) {
+            return [
+                'enabled' => false,
+                'message' => 'OPcache 未安装或未启用'
+            ];
+        }
+        
+        $status = opcache_get_status(false);
+        
+        if (!$status) {
+            return [
+                'enabled' => false,
+                'message' => 'OPcache 未启用'
+            ];
+        }
+        
+        return [
+            'enabled' => true,
+            'memory_usage' => [
+                'used' => $status['memory_usage']['used_memory'],
+                'used_format' => $this->formatBytes($status['memory_usage']['used_memory']),
+                'free' => $status['memory_usage']['free_memory'],
+                'free_format' => $this->formatBytes($status['memory_usage']['free_memory']),
+                'wasted' => $status['memory_usage']['wasted_memory'],
+                'wasted_format' => $this->formatBytes($status['memory_usage']['wasted_memory']),
+                'usage_percent' => round($status['memory_usage']['current_wasted_percentage'], 2)
+            ],
+            'statistics' => [
+                'num_cached_scripts' => $status['opcache_statistics']['num_cached_scripts'],
+                'hits' => $status['opcache_statistics']['hits'],
+                'misses' => $status['opcache_statistics']['misses'],
+                'hit_rate' => round($status['opcache_statistics']['opcache_hit_rate'], 2)
+            ]
+        ];
+    }
+    
+    /**
      * 获取已安装的包
      */
     protected function getInstalledPackages()
@@ -301,19 +613,14 @@ class Dev extends Base
         // 使用 Packagist API 搜索
         $url = "https://packagist.org/search.json?q=" . urlencode($keyword);
         
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $response = curl_exec($ch);
-        curl_close($ch);
+        $result = curl_request($url, [], 'GET', [], false, 10);
         
-        if (!$response) {
+        if ($result['code'] !== 200 || empty($result['data'])) {
             throw new \Exception('搜索失败，请检查网络连接');
         }
         
-        $data = json_decode($response, true);
+        // data 已经自动转换为数组
+        $data = $result['data'];
         
         if (!isset($data['results'])) {
             return [];

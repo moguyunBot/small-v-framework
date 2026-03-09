@@ -1,0 +1,331 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-api"></i> API 接口管理</h5>
+      </div>
+      <div class="card-body">
+        <!-- 搜索栏 -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <input type="text" class="form-control" v-model="searchKeyword" placeholder="搜索接口路径或描述">
+          </div>
+          <div class="col-md-3">
+            <select class="form-control" v-model="filterController">
+              <option value="">全部控制器</option>
+              <option v-for="controller in controllers" :key="controller" :value="controller">{{ controller }}</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-primary" @click="loadRoutes">
+              <i class="mdi mdi-refresh"></i> 刷新
+            </button>
+          </div>
+        </div>
+        
+        <!-- 接口列表 -->
+        <div class="table-responsive">
+          <table class="table table-hover table-sm">
+            <thead>
+              <tr>
+                <th width="5%">#</th>
+                <th width="10%">请求方式</th>
+                <th width="25%">接口路径</th>
+                <th width="15%">控制器</th>
+                <th width="10%">方法</th>
+                <th width="20%">描述</th>
+                <th width="15%">操作</th>
+              </tr>
+            </thead>
+            <tbody style="font-size: 13px;">
+              <tr v-for="(route, index) in filteredRoutes" :key="index">
+                <td>{{ index + 1 }}</td>
+                <td><span class="badge bg-primary">{{ route.method }}</span></td>
+                <td><code>{{ route.path }}</code></td>
+                <td>{{ route.controller }}</td>
+                <td>{{ route.action }}</td>
+                <td>{{ route.description }}</td>
+                <td>
+                  <a href="javascript:;" class="text-primary me-2" @click="showDetail(route)">详情</a>
+                  <a href="javascript:;" class="text-success" @click="showTest(route)">测试</a>
+                </td>
+              </tr>
+              <tr v-if="filteredRoutes.length === 0">
+                <td colspan="7" class="text-center text-muted">暂无接口数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 接口详情模态框 -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">接口详情</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label"><strong>接口路径</strong></label>
+          <div><code>{{ currentRoute.path }}</code></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>请求方式</strong></label>
+          <div><span class="badge bg-primary">{{ currentRoute.method }}</span></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>控制器</strong></label>
+          <div>{{ currentRoute.controller }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>方法</strong></label>
+          <div>{{ currentRoute.action }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"><strong>描述</strong></label>
+          <div>{{ currentRoute.description }}</div>
+        </div>
+        <div class="mb-3" v-if="currentRoute.params && currentRoute.params.length > 0">
+          <label class="form-label"><strong>参数</strong></label>
+          <table class="table table-sm table-bordered">
+            <thead>
+              <tr>
+                <th>参数名</th>
+                <th>类型</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="param in currentRoute.params" :key="param.name">
+                <td><code>{{ param.name }}</code></td>
+                <td>{{ param.type }}</td>
+                <td>{{ param.description }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mb-3" v-if="currentRoute.return">
+          <label class="form-label"><strong>返回值</strong></label>
+          <div>{{ currentRoute.return }}</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 接口测试模态框 -->
+<div class="modal fade" id="testModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">接口测试</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>请求配置</h6>
+            <div class="mb-3">
+              <label class="form-label">请求地址</label>
+              <input type="text" class="form-control" v-model="testConfig.url">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">请求方式</label>
+              <select class="form-control" v-model="testConfig.method">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">请求参数（JSON 格式）</label>
+              <textarea class="form-control" v-model="testConfig.params" rows="8" style="font-family: monospace;"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">请求头（JSON 格式）</label>
+              <textarea class="form-control" v-model="testConfig.headers" rows="4" style="font-family: monospace;"></textarea>
+            </div>
+            <button class="btn btn-primary" @click="executeTest">
+              <i class="mdi mdi-play"></i> 发送请求
+            </button>
+          </div>
+          <div class="col-md-6">
+            <h6>响应结果</h6>
+            <div v-if="testResult.status">
+              <div class="mb-2">
+                <strong>状态码：</strong>
+                <span :class="testResult.status === 200 ? 'text-success' : 'text-danger'">{{ testResult.status }}</span>
+              </div>
+              <div class="mb-2">
+                <strong>响应时间：</strong>
+                <span class="text-info">{{ testResult.time }}</span>
+              </div>
+              <div class="mb-2" v-if="testResult.error">
+                <strong>错误信息：</strong>
+                <span class="text-danger">{{ testResult.error }}</span>
+              </div>
+              <div class="mb-2">
+                <strong>响应数据：</strong>
+              </div>
+              <pre style="max-height: 400px; overflow-y: auto; background: #f5f5f5; padding: 15px; border-radius: 4px;">{{ formatJson(testResult.data) }}</pre>
+            </div>
+            <div v-else class="text-muted text-center" style="padding: 100px 0;">
+              点击"发送请求"查看响应结果
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      routes: [],
+      searchKeyword: '',
+      filterController: '',
+      currentRoute: {},
+      testConfig: {
+        url: '',
+        method: 'GET',
+        params: '{}',
+        headers: '{}'
+      },
+      testResult: {},
+      detailModal: null,
+      testModal: null
+    };
+  },
+  computed: {
+    controllers() {
+      const controllers = [...new Set(this.routes.map(r => r.controller))];
+      return controllers.sort();
+    },
+    filteredRoutes() {
+      let filtered = this.routes;
+      
+      // 按控制器筛选
+      if (this.filterController) {
+        filtered = filtered.filter(r => r.controller === this.filterController);
+      }
+      
+      // 按关键词搜索
+      if (this.searchKeyword) {
+        const keyword = this.searchKeyword.toLowerCase();
+        filtered = filtered.filter(r => 
+          r.path.toLowerCase().includes(keyword) ||
+          r.description.toLowerCase().includes(keyword)
+        );
+      }
+      
+      return filtered;
+    }
+  },
+  mounted() {
+    this.loadRoutes();
+    this.detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+    this.testModal = new bootstrap.Modal(document.getElementById('testModal'));
+  },
+  methods: {
+    async loadRoutes() {
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('index', { action: 'list' });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.routes = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    showDetail(route) {
+      this.currentRoute = route;
+      this.detailModal.show();
+    },
+    
+    showTest(route) {
+      this.testConfig.url = route.path;
+      this.testConfig.method = route.method.split('/')[0];
+      this.testConfig.params = '{}';
+      this.testConfig.headers = '{}';
+      this.testResult = {};
+      this.testModal.show();
+    },
+    
+    async executeTest() {
+      try {
+        const params = JSON.parse(this.testConfig.params);
+        const headers = JSON.parse(this.testConfig.headers);
+        
+        const loading = layer.load();
+        
+        const res = await this.postAsync('index', {
+          action: 'test',
+          url: this.testConfig.url,
+          method: this.testConfig.method,
+          params: params,
+          headers: headers
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.testResult = res.data;
+        } else {
+          layer.msg(res.msg || '测试失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.msg('参数格式错误: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    formatJson(data) {
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          return data;
+        }
+      }
+      return JSON.stringify(data, null, 2);
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}
