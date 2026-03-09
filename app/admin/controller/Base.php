@@ -111,9 +111,6 @@ class Base
         $menu_html = Rule::recursion_menu($trees);
         
         View::assign('menu_html', $menu_html);
-        
-        // 设置基础模板路径
-        $this->setBaseTemplate();
     }
     
     /**
@@ -161,16 +158,6 @@ class Base
         }
         
         return $all_rules;
-    }
-    
-    /**
-     * 设置基础模板路径
-     * @return void
-     */
-    protected function setBaseTemplate(): void
-    {
-        // 主应用：从 /app/admin/view/ 到 /support/view/base_admin
-        View::assign('base_admin', '../../../support/view/base_admin');
     }
     
     /**
