@@ -8,11 +8,11 @@
         <h5 class="mb-0">
           配置项管理 - {$group.group_title}
         </h5>
-        <a class="btn btn-sm btn-secondary" href="/admin/config/groupIndex"><i class="mdi mdi-arrow-left"></i> 返回分组列表</a>
+        <a class="btn btn-sm btn-secondary" href="/admin/dev/groupIndex"><i class="mdi mdi-arrow-left"></i> 返回分组列表</a>
       </div>
       <div class="card-body">
         <div class="card-btns mb-2-5">
-          <a class="btn btn-sm btn-primary me-1" href="addConfig?group={$groupKey}"><i class="mdi mdi-plus"></i> 添加配置项</a>
+          <a class="btn btn-sm btn-primary me-1" href="/admin/dev/configAdd?group={$groupKey}"><i class="mdi mdi-plus"></i> 添加配置项</a>
         </div>
         
         <div class="table-responsive">
@@ -55,8 +55,8 @@
                 <td>{$v.sort}</td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <a class="btn btn-default" href="editConfig?id={$v.id}">编辑</a>
-                    <button class="btn btn-default" onclick="del({$v.id}, 'deleteConfig')">删除</button>
+                    <a class="btn btn-default" href="/admin/dev/configEdit?id={$v.id}">编辑</a>
+                    <button class="btn btn-default" onclick="del({$v.id}, '/admin/dev/configDelete')">删除</button>
                   </div>
                 </td>
               </tr>
