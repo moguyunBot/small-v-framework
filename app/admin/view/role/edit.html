@@ -1,0 +1,64 @@
+{extend name="$base_admin"}
+{block name="head"}
+<link rel="stylesheet" type="text/css" href="/static/js/bootstrap-select/bootstrap-select.min.css">
+<link rel="stylesheet" href="/static/jstree/themes/default/style.css">
+{/block}
+{block name="main"}
+<div class="card">
+    <div class="card-body">
+        <form @submit.prevent="submit1">
+            <div class="mb-3">
+                <label class="form-label">角色名称</label>
+                <input type="text" class="form-control" required v-model="form.name">
+            </div>
+            {if $role['rules']!='*'}
+            <div class="mb-3">
+                <label class="form-label">选择权限</label>
+                <div ref="rules" style="margin-top:20px;min-height:200px;border:1px solid #ddd;padding:20px;"></div>
+            </div>
+            {/if}
+            <div class="mb-3">
+                <label class="form-label">状态</label>
+                <select class="form-control selectpicker" v-model="form.status">
+                    <option value="1">正常</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">提交</button>
+        </form>
+    </div>
+</div>
+{/block}
+{block name="script"}
+
+<script type="text/javascript" src="/static/js/bootstrap-select/bootstrap-select.min.js"></script>
+<script src="/static/jstree/jstree.js"></script>
+<script>
+    createVueApp({
+        data() {
+            return {
+                form: JSON.parse('{$role|json_encode|raw}')
+            };
+        },
+        mounted() {
+            $(this.$refs.rules).jstree({
+                core: {
+                    data: JSON.parse('{:json_encode($rules)}'),
+                    themes: {
+                        icons: false
+                    }
+                },
+                plugins: ['checkbox']
+            });
+        },
+        methods: {
+            submit1(e) {
+                let get_checked = $(this.$refs.rules).jstree('get_checked');
+                let get_undetermined = $(this.$refs.rules).jstree('get_undetermined');
+                this.form.rules = get_checked.concat(get_undetermined);
+                this.submit(e);
+            }
+        }
+    }).mount('#app');
+</script>
+{/block}

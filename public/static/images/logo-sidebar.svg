@@ -1,0 +1,45 @@
+<svg width="280" height="80" viewBox="0 0 280 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- ØšI -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- þè - ½a„m¹bQ< -->
+  <g transform="translate(10, 10)">
+    <!-- -Ãm¹b -->
+    <path d="M30 16 L40 22 L40 34 L30 40 L20 34 L20 22 Z" fill="url(#logoGradient)" opacity="0.9"/>
+    <!-- æ
+m¹b -->
+    <path d="M20 6 L30 12 L30 16 L20 22 L10 16 L10 12 Z" fill="url(#logoGradient)" opacity="0.7"/>
+    <!-- ó
+m¹b -->
+    <path d="M40 6 L50 12 L50 16 L40 22 L30 16 L30 12 Z" fill="url(#logoGradient)" opacity="0.7"/>
+    <!-- æm¹b -->
+    <path d="M20 34 L30 40 L30 44 L20 50 L10 44 L10 40 Z" fill="url(#logoGradient)" opacity="0.7"/>
+    <!-- óm¹b -->
+    <path d="M40 34 L50 40 L50 44 L40 50 L30 44 L30 40 Z" fill="url(#logoGradient)" opacity="0.7"/>
+    
+    <!-- Þ¥¿ -->
+    <line x1="30" y1="16" x2="30" y2="12" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+    <line x1="30" y1="40" x2="30" y2="44" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+    <line x1="20" y1="22" x2="10" y2="16" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+    <line x1="40" y1="22" x2="50" y2="16" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+    <line x1="20" y1="34" x2="10" y2="40" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+    <line x1="40" y1="34" x2="50" y2="40" stroke="url(#logoGradient)" stroke-width="2" opacity="0.6"/>
+  </g>
+  
+  <!-- ‡Wè -->
+  <text x="90" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="url(#textGradient)">
+    Admin
+  </text>
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="300" fill="#94a3b8">
+    Pro
+  </text>
+</svg>

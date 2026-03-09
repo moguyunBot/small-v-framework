@@ -1,0 +1,61 @@
+{extend name="$base_admin"}
+{block name="main"}
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="card-btns mb-2-5">
+          <a class="btn btn-sm btn-primary me-1" href="groupAdd"><i class="mdi mdi-plus"></i> 添加分组</a>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th width="80">ID</th>
+                <th width="150">分组标识</th>
+                <th width="150">分组标题</th>
+                <th width="100">配置项数量</th>
+                <th width="80">排序</th>
+                <th width="180">创建时间</th>
+                <th width="150">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {foreach $list as $v}
+              <tr>
+                <td>{$v.id}</td>
+                <td>{$v.group_key}</td>
+                <td>{$v.group_title}</td>
+                <td>
+                  <a href="/admin/config/manage?group={$v.group_key}" class="text-primary">
+                    查看配置项
+                  </a>
+                </td>
+                <td>{$v.sort}</td>
+                <td>{$v.create_time}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <a class="btn btn-default" href="groupEdit?id={$v.id}">编辑</a>
+                    <a class="btn btn-default" href="/admin/config/manage?group={$v.group_key}">配置项</a>
+                    <button class="btn btn-default" onclick="del({$v.id}, 'groupDelete')">删除</button>
+                  </div>
+                </td>
+              </tr>
+              {/foreach}
+              {if empty($list)}
+              <tr>
+                <td colspan="7" class="text-center text-muted">暂无数据</td>
+              </tr>
+              {/if}
+            </tbody>
+          </table>
+        </div>
+        {$list|raw}
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}

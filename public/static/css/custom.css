@@ -1,0 +1,18 @@
+/* 调整侧边栏菜单图标垂直位置 */
+.lyear-aside .nav-item > a > i,
+.lyear-aside .nav-item > a > .mdi,
+.lyear-aside .nav-item > a > .iconfont {
+    vertical-align: middle;
+    position: relative;
+    top: 2px;
+}
+
+/* 确保图标与文字对齐 */
+.lyear-aside .nav-item > a {
+    display: flex;
+    align-items: center;
+}
+
+.lyear-aside .nav-item > a > i {
+    margin-right: 8px;
+}

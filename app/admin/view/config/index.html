@@ -1,0 +1,328 @@
+{extend name="$base_admin"}
+{block name="head"}
+<link href="/static/wangeditor/style.css" rel="stylesheet"/>
+
+<style>
+    .wrapper {
+        border: 1px solid #ccc;
+        z-index: 100; /* 按需定义 */
+    }
+    .toolbar {
+        border-bottom: 1px solid #ccc; 
+    }
+    .editor {
+        height: 500px; 
+    }
+</style>
+{/block}
+{block name="main"}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">系统配置</h5>
+    </div>
+    <div class="card-body">
+        {if empty($configs)}
+        <div class="alert alert-info">
+            <i class="mdi mdi-information"></i> {$emptyMessage|default='暂无配置项'}
+        </div>
+        {else}
+        <ul class="nav nav-tabs nav-tabs-line">
+            {foreach $configs as $k=>$v}
+            <li class="nav-item">
+                <a href="?key={$k}" class="nav-link {if $key==$k}active{/if}">{$v.title}</a>
+            </li>
+            {/foreach}
+        </ul>
+        
+        <div class="tab-content mt-2" id="myTabContent">
+			<div class="tab-pane fade active show">
+			    <form @submit.prevent="submit">
+                    <div class="form-group" v-if="form[currentKey].config" v-for="(v,k) in form[currentKey].config" :key="k" v-if="v.type">
+                        <label v-text="v.title"></label>
+                        <input v-if="v.type=='text'" type="text" class="form-control" v-model="v.value">
+                        <input v-if="v.type=='password'" type="password" class="form-control" v-model="v.value">
+                        <input v-if="v.type=='number'" type="number" class="form-control" v-model="v.value">
+                        <textarea v-if="v.type=='textarea'" class="form-control" rows="8" v-model="v.value"></textarea>
+                        <div v-if="v.type=='image'">
+                            <input type="file" class="form-control" accept="image/*" @change="imageChange($event,k)" :ref="'image_'+k">
+                            <div v-if="getImagePreview(k)" class="mt-2 position-relative d-inline-block">
+                                <img :src="getImagePreview(k)" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" @click="removeImage(k)">
+                                    <i class="mdi mdi-close"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">支持 jpg, png, gif 等图片格式</small>
+                        </div>
+                        <div v-if="v.type=='video'">
+                            <input type="file" class="form-control" accept="video/*" @change="videoChange($event,k)" :ref="'video_'+k">
+                            <div v-if="getVideoPreview(k)" class="mt-2 position-relative d-inline-block">
+                                <video :src="getVideoPreview(k)" controls class="border rounded" style="max-width: 400px; max-height: 300px;"></video>
+                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" @click="removeVideo(k)">
+                                    <i class="mdi mdi-close"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">支持 mp4, avi, mov 等视频格式</small>
+                        </div>
+                        <div v-if="v.type=='images'">
+                            <input type="file" class="form-control" accept="image/*" multiple @change="imagesChange($event,k)" :ref="'images_'+k">
+                            <div v-if="getImagesPreview(k).length > 0" class="mt-2 d-flex flex-wrap gap-2">
+                                <div v-for="(preview, index) in getImagesPreview(k)" :key="index" class="position-relative d-inline-block" draggable="true" @dragstart="dragStartImage(k, index)" @dragover="dragOverImage($event, k, index)" @dragend="dragEndImage(k)" style="cursor: move;">
+                                    <img :src="preview" class="img-thumbnail" style="width: 120px; height: 120px; object-fit: cover;">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" @click="removeImageItem(k, index)">
+                                        <i class="mdi mdi-close"></i>
+                                    </button>
+                                    <div class="position-absolute bottom-0 start-0 m-1 badge bg-dark">{{ index + 1 }}</div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1">可选择多张图片，拖拽可排序</small>
+                        </div>
+                        <div v-if="v.type=='videos'">
+                            <input type="file" class="form-control" accept="video/*" multiple @change="videosChange($event,k)" :ref="'videos_'+k">
+                            <div v-if="getVideosPreview(k).length > 0" class="mt-2 d-flex flex-wrap gap-2">
+                                <div v-for="(preview, index) in getVideosPreview(k)" :key="index" class="position-relative d-inline-block" draggable="true" @dragstart="dragStartVideo(k, index)" @dragover="dragOverVideo($event, k, index)" @dragend="dragEndVideo(k)" style="cursor: move;">
+                                    <video :src="preview" controls class="border rounded" style="width: 200px; height: 150px;"></video>
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" @click="removeVideoItem(k, index)">
+                                        <i class="mdi mdi-close"></i>
+                                    </button>
+                                    <div class="position-absolute bottom-0 start-0 m-1 badge bg-dark">{{ index + 1 }}</div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-1">可选择多个视频，拖拽可排序</small>
+                        </div>
+                        <div v-if="v.type=='radio'" class="input-group">
+                            <div class="form-check form-check-inline" v-for="(v1,k1) in v.params">
+                                <input class="form-check-input" type="radio" :id="'radio'+k+k1" v-model="v.value" :value="v1.key"/>
+                                <label class="form-check-label" :for="'radio'+k+k1">{{v1.name}}</label>
+                            </div>
+                        </div>
+                        <div v-if="v.type=='checkbox'" class="input-group">
+                            <div class="form-check form-check-inline" v-for="(v1,k1) in v.params">
+                                <input class="form-check-input" type="checkbox" :id="'checkbox'+k+k1" v-model="v.value" :value="v1.key"/>
+                                <label class="form-check-label" :for="'checkbox'+k+k1">{{v1.name}}</label>
+                            </div>
+                        </div>
+                        <select v-if="v.type=='select'" class="form-control" v-model="v.value">
+                            <option value="">请选择</option>
+                            <option v-for="v1 of v.params" :value="v1.key">{{v1.name}}</option>
+                        </select>
+                        <template v-if="v.type=='editor'">
+                            <div class="wrapper">
+                                <div :class="'toolbar key'+k"><!-- 工具栏 --></div>
+                                <div :class="'editor key'+k"><!-- 编辑器 --></div>
+                            </div>
+                        </template>
+                        
+                        <small class="help-block">调用方式：<code>get_config('{$key}.{{k}}')</code></small>
+                        
+                        
+                        
+                        <br />
+                        <small v-if="v.desc" class="help-block">备注：{{v.desc}}</small>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary m-r-5">确 定</button>
+                    </div>
+                </form>
+			</div>
+		</div>
+        {/if}
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="/static/wangeditor/index.js"></script>
+<script>
+    const { createApp } = Vue;
+    
+    createVueApp({
+        data(){
+            return {
+                form: {:json_encode($configs,256)},
+                draggedIndex: null,
+                currentKey: '{$key}'
+            }
+        },
+        created(){
+            const { createEditor, createToolbar } = window.wangEditor
+            let _this = this;
+            if(this.form[this.currentKey].config){
+                setTimeout(()=>{
+                    for(let k in this.form[this.currentKey].config){
+                        if(this.form[this.currentKey].config[k].type=='editor'){
+                            const editorConfig = {
+                                placeholder: '请填写内容',
+                                MENU_CONF:{
+                                    uploadImage:{
+                                        server:"upload_image",
+                                        fieldName:'image'
+                                    },
+                                    uploadVideo:{
+                                        server:"upload_image",
+                                        fieldName:'video',
+                                    }
+                                },
+                                onChange(editor) {
+                                    _this.form[_this.currentKey].config[k].value = editor.getHtml()
+                                }
+                            }
+                            
+                            const editor = createEditor({
+                                selector: '.editor.key'+k,
+                                html: _this.form[_this.currentKey].config[k].value,
+                                config: editorConfig,
+                                mode: 'default',
+                            })
+                            
+                            const toolbarConfig = {}
+                            
+                            const toolbar = createToolbar({
+                                editor,
+                                selector: '.toolbar.key'+k,
+                                config: toolbarConfig,
+                                mode: 'default',
+                            })
+                        }
+                    }
+                },500)
+                
+            }
+        },
+        methods:{
+            // 单图上传处理
+            imageChange(e, k){
+                const file = e.target.files[0];
+                if (file) {
+                    this.form[this.currentKey].config[k].value = file;
+                }
+            },
+            removeImage(k){
+                this.form[this.currentKey].config[k].value = '';
+                if (this.$refs['image_'+k] && this.$refs['image_'+k][0]) {
+                    this.$refs['image_'+k][0].value = '';
+                }
+            },
+            getImagePreview(k){
+                const value = this.form[this.currentKey].config[k].value;
+                if (!value) return '';
+                return typeof value === 'object' ? URL.createObjectURL(value) : value;
+            },
+            
+            // 多图上传处理
+            imagesChange(e, k){
+                const files = Array.from(e.target.files);
+                if (!this.form[this.currentKey].config[k].value || !Array.isArray(this.form[this.currentKey].config[k].value)) {
+                    this.form[this.currentKey].config[k].value = [];
+                }
+                files.forEach(file => {
+                    this.form[this.currentKey].config[k].value.push(file);
+                });
+            },
+            removeImageItem(k, index){
+                this.form[this.currentKey].config[k].value.splice(index, 1);
+                if (this.form[this.currentKey].config[k].value.length === 0 && this.$refs['images_'+k] && this.$refs['images_'+k][0]) {
+                    this.$refs['images_'+k][0].value = '';
+                }
+            },
+            getImagesPreview(k){
+                const value = this.form[this.currentKey].config[k].value;
+                if (!Array.isArray(value)) return [];
+                return value.map(item => typeof item === 'object' ? URL.createObjectURL(item) : item);
+            },
+            dragStartImage(k, index){
+                this.draggedIndex = index;
+            },
+            dragOverImage(e, k, index){
+                e.preventDefault();
+                if (this.draggedIndex !== null && this.draggedIndex !== index) {
+                    const item = this.form[this.currentKey].config[k].value.splice(this.draggedIndex, 1)[0];
+                    this.form[this.currentKey].config[k].value.splice(index, 0, item);
+                    this.draggedIndex = index;
+                }
+            },
+            dragEndImage(k){
+                this.draggedIndex = null;
+            },
+            
+            // 单视频上传处理
+            videoChange(e, k){
+                const file = e.target.files[0];
+                if (file) {
+                    this.form[this.currentKey].config[k].value = file;
+                }
+            },
+            removeVideo(k){
+                this.form[this.currentKey].config[k].value = '';
+                if (this.$refs['video_'+k] && this.$refs['video_'+k][0]) {
+                    this.$refs['video_'+k][0].value = '';
+                }
+            },
+            getVideoPreview(k){
+                const value = this.form[this.currentKey].config[k].value;
+                if (!value) return '';
+                return typeof value === 'object' ? URL.createObjectURL(value) : value;
+            },
+            
+            // 多视频上传处理
+            videosChange(e, k){
+                const files = Array.from(e.target.files);
+                if (!this.form[this.currentKey].config[k].value || !Array.isArray(this.form[this.currentKey].config[k].value)) {
+                    this.form[this.currentKey].config[k].value = [];
+                }
+                files.forEach(file => {
+                    this.form[this.currentKey].config[k].value.push(file);
+                });
+            },
+            removeVideoItem(k, index){
+                this.form[this.currentKey].config[k].value.splice(index, 1);
+                if (this.form[this.currentKey].config[k].value.length === 0 && this.$refs['videos_'+k] && this.$refs['videos_'+k][0]) {
+                    this.$refs['videos_'+k][0].value = '';
+                }
+            },
+            getVideosPreview(k){
+                const value = this.form[this.currentKey].config[k].value;
+                if (!Array.isArray(value)) return [];
+                return value.map(item => typeof item === 'object' ? URL.createObjectURL(item) : item);
+            },
+            dragStartVideo(k, index){
+                this.draggedIndex = index;
+            },
+            dragOverVideo(e, k, index){
+                e.preventDefault();
+                if (this.draggedIndex !== null && this.draggedIndex !== index) {
+                    const item = this.form[this.currentKey].config[k].value.splice(this.draggedIndex, 1)[0];
+                    this.form[this.currentKey].config[k].value.splice(index, 0, item);
+                    this.draggedIndex = index;
+                }
+            },
+            dragEndVideo(k){
+                this.draggedIndex = null;
+            },
+            filterXSS(data){
+                if (Array.isArray(data)) {
+                    return data.map(item => this.filterXSS(item));
+                }
+                
+                if (typeof data === 'object' && data !== null) {
+                    const filtered = {};
+                    for (let key in data) {
+                        filtered[key] = this.filterXSS(data[key]);
+                    }
+                    return filtered;
+                }
+                
+                if (typeof data !== 'string') {
+                    return data;
+                }
+                
+                if (/<[^>]+>/.test(data)) {
+                    return data;
+                }
+                
+                const div = document.createElement('div');
+                div.textContent = data;
+                return div.innerHTML;
+            }
+        }
+    }).mount('#app');
+</script>
+{/block}

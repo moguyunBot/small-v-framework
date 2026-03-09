@@ -1,0 +1,72 @@
+{extend name="$base_admin"}
+{block name="head"}
+<link rel="stylesheet" type="text/css" href="/static/js/bootstrap-select/bootstrap-select.min.css">
+{/block}
+{block name="main"}
+<div class="card">
+    <div class="card-body">
+        <form @submit.prevent="submit">
+            <div class="mb-3">
+                <label class="form-label">标题</label>
+                <input type="text" class="form-control" v-model="form.title">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">上级菜单</label>
+                <select class="form-control selectpicker" v-model="form.pid">
+                    <option value="0">无</option>
+                    {foreach $menus as $v}
+                    <option value="{$v.id}">{$v.title}</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">ICON</label>
+                <input type="text" class="form-control" v-model="form.icon">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">href</label>
+                <input type="text" class="form-control" v-model="form.href">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">排序</label>
+                <input type="number" class="form-control" v-model="form.sort">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">菜单</label>
+                <select class="form-control selectpicker" v-model="form.is_menu">
+                    <option value=1>显示</option>
+                    <option value=0>隐藏</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">状态</label>
+                <select class="form-control selectpicker" v-model="form.status">
+                    <option value=1>启用</option>
+                    <option value=0>隐藏</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">提交</button>
+        </form>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript" src="/static/js/bootstrap-select/bootstrap-select.min.js"></script>
+<script>
+    createVueApp({
+        data() {
+            return {
+                form: {
+                    title: '',
+                    pid: 0,
+                    icon: '',
+                    href: '',
+                    sort: 0,
+                    is_menu: 1,
+                    status:1
+                }
+            };
+        }
+    }).mount('#app');
+</script>
+{/block}

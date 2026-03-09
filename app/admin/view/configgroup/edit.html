@@ -1,0 +1,46 @@
+{extend name="$base_admin"}
+{block name="main"}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">编辑配置分组</h5>
+    </div>
+    <div class="card-body">
+        <form @submit.prevent="submit">
+            <div class="mb-3">
+                <label class="form-label">分组标识 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="form.group_key" placeholder="如：basic" required>
+                <small class="text-muted">英文字母，用于唯一标识该分组</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">分组标题 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="form.group_title" placeholder="如：基本设置" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">排序</label>
+                <input type="number" class="form-control" v-model="form.sort">
+                <small class="text-muted">数字越大越靠后</small>
+            </div>
+
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="mdi mdi-check"></i> 提交
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    createVueApp({
+        data() {
+            return {
+                form: JSON.parse('{$group|json_encode|raw}')
+            };
+        }
+    }).mount('#app');
+</script>
+{/block}

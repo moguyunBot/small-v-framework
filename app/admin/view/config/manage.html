@@ -1,0 +1,78 @@
+{extend name="$base_admin"}
+{block name="main"}
+
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          配置项管理 - {$group.group_title}
+        </h5>
+        <a class="btn btn-sm btn-secondary" href="/admin/config/groupIndex"><i class="mdi mdi-arrow-left"></i> 返回分组列表</a>
+      </div>
+      <div class="card-body">
+        <div class="card-btns mb-2-5">
+          <a class="btn btn-sm btn-primary me-1" href="addConfig?group={$groupKey}"><i class="mdi mdi-plus"></i> 添加配置项</a>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th width="60">ID</th>
+                <th width="120">配置项</th>
+                <th width="120">项标题</th>
+                <th width="80">类型</th>
+                <th>说明</th>
+                <th width="60">排序</th>
+                <th width="120">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {foreach $list as $v}
+              <tr>
+                <td>{$v.id}</td>
+                <td>{$v.config_key}</td>
+                <td>{$v.config_title}</td>
+                <td>
+                  {switch $v.config_type}
+                  {case 'text'}<span class="badge bg-info">文本</span>{/case}
+                  {case 'textarea'}<span class="badge bg-info">多行</span>{/case}
+                  {case 'number'}<span class="badge bg-success">数字</span>{/case}
+                  {case 'password'}<span class="badge bg-warning">密码</span>{/case}
+                  {case 'image'}<span class="badge bg-warning">单图</span>{/case}
+                  {case 'images'}<span class="badge bg-warning">多图</span>{/case}
+                  {case 'video'}<span class="badge bg-danger">视频</span>{/case}
+                  {case 'videos'}<span class="badge bg-danger">多视频</span>{/case}
+                  {case 'radio'}<span class="badge bg-primary">单选</span>{/case}
+                  {case 'checkbox'}<span class="badge bg-primary">多选</span>{/case}
+                  {case 'select'}<span class="badge bg-primary">下拉</span>{/case}
+                  {case 'editor'}<span class="badge bg-secondary">富文本</span>{/case}
+                  {default /}<span class="badge bg-light text-dark">{$v.config_type}</span>
+                  {/switch}
+                </td>
+                <td>{$v.config_desc|default=''}</td>
+                <td>{$v.sort}</td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <a class="btn btn-default" href="editConfig?id={$v.id}">编辑</a>
+                    <button class="btn btn-default" onclick="del({$v.id}, 'deleteConfig')">删除</button>
+                  </div>
+                </td>
+              </tr>
+              {/foreach}
+              {if empty($list)}
+              <tr>
+                <td colspan="7" class="text-center text-muted">暂无配置项，请先添加</td>
+              </tr>
+              {/if}
+            </tbody>
+          </table>
+        </div>
+        {$list|raw}
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
