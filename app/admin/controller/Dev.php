@@ -251,6 +251,15 @@ class Dev extends Base
     }
     
     /**
+     * 开发辅助工具
+     * @return \Webman\Http\Response
+     */
+    public function tools()
+    {
+        return $this->view('dev/tools');
+    }
+    
+    /**
      * 获取已安装的包
      */
     protected function getInstalledPackages()
