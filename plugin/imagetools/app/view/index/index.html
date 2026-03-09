@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>图片工具</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/app/nettools/static/css/style.css"></head>
+<body><div class="container"><a href="/" class="back-link">← 返回首页</a><div class="header"><h1>🖼️ 图片工具</h1><p>二维码生成、图片处理</p></div><div class="tools-grid">
+<div class="tool-card"><h3>二维码生成</h3><textarea class="form-control" id="qrText" rows="4" placeholder="输入文本或网址"></textarea><button class="btn btn-primary" style="margin-top:10px" onclick="genQr()">生成二维码</button><div class="result-box" id="qrResult"></div></div>
+<div class="tool-card"><h3>更多功能</h3><p style="color:#666">图片压缩、格式转换等功能开发中...</p></div>
+</div></div>
+<script>
+async function genQr(){const t=document.getElementById('qrText').value;if(!t)return layer.msg('请输入内容');const r=await fetch('/app/imagetools/qrcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});const d=await r.json();if(d.code===0){document.getElementById('qrResult').innerHTML='<img src="'+d.data.url+'" style="max-width:100%">';document.getElementById('qrResult').classList.add('show');}else alert(d.msg);}
+</script><script src="/static/js/jquery.min.js"></script>
+    <script src="/static/layer/layer.js"></script>
+</body></html>

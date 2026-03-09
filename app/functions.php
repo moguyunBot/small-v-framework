@@ -383,7 +383,7 @@ function get_config($key, $default = null)
         return $default;
     }
     
-    return \app\admin\model\Config::getConfigValue('', $groupKey, $configKey, $default);
+    return \app\admin\model\Config::getConfigValue($groupKey, $configKey, $default);
 }
 
 /**

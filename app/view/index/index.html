@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>插件市场 - 科技工具平台</title>
+    <title>{:get_config('basic.title')}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/favicon-192.png">
     <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
     <style>
         * {
@@ -410,7 +413,7 @@
     <nav class="navbar">
         <div class="logo">
             <i class="mdi mdi-cube-outline"></i>
-            插件市场
+            {:get_config('basic.title')}
         </div>
         <div class="nav-links">
             <a href="#" class="nav-link">首页</a>
@@ -438,6 +441,7 @@
         <!-- 分类标签 -->
         <div class="categories">
             <div class="category-tag active" data-category="all">全部</div>
+            <div class="category-tag" data-category="网络工具">网络工具</div>
             <div class="category-tag" data-category="AI工具">AI工具</div>
             <div class="category-tag" data-category="开发工具">开发工具</div>
             <div class="category-tag" data-category="图像工具">图像工具</div>
@@ -448,20 +452,20 @@
 
         <!-- 插件网格 -->
         <div class="plugins-grid" id="pluginsGrid">
-            <?php foreach($plugins as $plugin): ?>
-            <div class="plugin-card" data-category="<?= $plugin['category'] ?>" data-name="<?= $plugin['name'] ?>" onclick="window.location.href='<?= $plugin['url'] ?>'">
-                <div class="plugin-icon" style="background: <?= $plugin['color'] ?>">
-                    <i class="mdi <?= $plugin['icon'] ?>"></i>
+            {volist name="plugins" id="plugin"}
+            <div class="plugin-card" data-category="{$plugin.category}" data-name="{$plugin.name}" onclick="window.location.href='{$plugin.url}'">
+                <div class="plugin-icon" style="background: {$plugin.color}">
+                    <i class="mdi {$plugin.icon}"></i>
                 </div>
-                <div class="plugin-name"><?= $plugin['name'] ?></div>
-                <div class="plugin-category"><?= $plugin['category'] ?></div>
-                <div class="plugin-description"><?= $plugin['description'] ?></div>
-                <div class="plugin-status <?= $plugin['status'] === 'coming' ? 'status-coming' : '' ?>">
+                <div class="plugin-name">{$plugin.name}</div>
+                <div class="plugin-category">{$plugin.category}</div>
+                <div class="plugin-description">{$plugin.description}</div>
+                <div class="plugin-status {eq name='plugin.status' value='coming'}status-coming{/eq}">
                     <span class="status-dot"></span>
-                    <span><?= $plugin['status'] === 'active' ? '可用' : '即将推出' ?></span>
+                    <span>{eq name='plugin.status' value='active'}可用{else/}即将推出{/eq}</span>
                 </div>
             </div>
-            <?php endforeach; ?>
+            {/volist}
         </div>
     </div>
 

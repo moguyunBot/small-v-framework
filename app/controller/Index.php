@@ -30,88 +30,76 @@ class Index
      */
     protected function getPlugins()
     {
-        // 这里可以从数据库读取插件列表
-        // 暂时返回示例数据
         return [
             [
                 'id' => 1,
-                'name' => 'AI 对话助手',
-                'icon' => 'mdi-robot',
+                'name' => 'IPv6 连接测试',
+                'icon' => 'mdi-network',
                 'color' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'description' => '基于 GPT 的智能对话助手，支持多轮对话',
-                'category' => 'AI工具',
-                'url' => '/plugin/chat',
+                'description' => '测试您的网络 IPv4/IPv6 连接性能，DNS解析和速度测试',
+                'category' => '网络工具',
+                'url' => '/app/ipv6test/index',
                 'status' => 'active'
             ],
             [
                 'id' => 2,
-                'name' => '图片处理',
-                'icon' => 'mdi-image-edit',
-                'color' => 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                'description' => '在线图片编辑、压缩、格式转换工具',
-                'category' => '图像工具',
-                'url' => '/plugin/image',
+                'name' => '网络工具箱',
+                'icon' => 'mdi-lan',
+                'color' => 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'description' => 'Ping测试、DNS查询、Whois查询、端口扫描',
+                'category' => '网络工具',
+                'url' => '/app/nettools/index',
                 'status' => 'active'
             ],
             [
                 'id' => 3,
-                'name' => '代码生成器',
-                'icon' => 'mdi-code-tags',
-                'color' => 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                'description' => '快速生成常用代码模板和框架',
+                'name' => '编码解码工具',
+                'icon' => 'mdi-code-braces',
+                'color' => 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'description' => 'Base64、URL编码解码、MD5/SHA哈希、JSON格式化',
                 'category' => '开发工具',
-                'url' => '/plugin/codegen',
+                'url' => '/app/encoder/index',
                 'status' => 'active'
             ],
             [
                 'id' => 4,
-                'name' => '文档转换',
-                'icon' => 'mdi-file-document',
-                'color' => 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                'description' => '支持 PDF、Word、Excel 等格式互转',
+                'name' => '文本处理工具',
+                'icon' => 'mdi-text-box',
+                'color' => 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'description' => '文本对比、字数统计、大小写转换、文本去重',
                 'category' => '办公工具',
-                'url' => '/plugin/convert',
+                'url' => '/app/texttools/index',
                 'status' => 'active'
             ],
             [
                 'id' => 5,
-                'name' => '数据分析',
-                'icon' => 'mdi-chart-line',
-                'color' => 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                'description' => '可视化数据分析和报表生成',
-                'category' => '数据工具',
-                'url' => '/plugin/analytics',
+                'name' => '开发者工具',
+                'icon' => 'mdi-code-tags',
+                'color' => 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'description' => '时间戳转换、UUID生成、随机密码、颜色生成器',
+                'category' => '开发工具',
+                'url' => '/app/devtools/index',
                 'status' => 'active'
             ],
             [
                 'id' => 6,
-                'name' => 'API 测试',
-                'icon' => 'mdi-api',
-                'color' => 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-                'description' => '强大的 API 接口测试工具',
-                'category' => '开发工具',
-                'url' => '/plugin/api-test',
+                'name' => '图片工具',
+                'icon' => 'mdi-image-edit',
+                'color' => 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'description' => '二维码生成、图片处理工具',
+                'category' => '图像工具',
+                'url' => '/app/imagetools/index',
                 'status' => 'active'
             ],
             [
                 'id' => 7,
-                'name' => '视频处理',
-                'icon' => 'mdi-video',
-                'color' => 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                'description' => '视频剪辑、压缩、格式转换',
-                'category' => '媒体工具',
-                'url' => '/plugin/video',
-                'status' => 'coming'
-            ],
-            [
-                'id' => 8,
-                'name' => '区块链工具',
-                'icon' => 'mdi-bitcoin',
-                'color' => 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-                'description' => '区块链数据查询和分析工具',
-                'category' => '区块链',
-                'url' => '/plugin/blockchain',
-                'status' => 'coming'
+                'name' => '实用工具',
+                'icon' => 'mdi-toolbox',
+                'color' => 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                'description' => 'IP地址查询、User-Agent解析等实用工具',
+                'category' => '网络工具',
+                'url' => '/app/utiltools/index',
+                'status' => 'active'
             ],
         ];
     }

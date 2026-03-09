@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="网络工具集合：Ping测试、DNS查询、Whois查询、端口扫描">
+    <meta name="keywords" content="Ping测试,DNS查询,Whois,端口扫描,网络工具">
+    <title>网络工具 - 小微微工具箱</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/app/nettools/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← 返回首页</a>
+        
+        <div class="header">
+            <h1>🌐 网络工具</h1>
+            <p>Ping测试、DNS查询、Whois查询、端口扫描</p>
+        </div>
+
+        <div class="tools-grid">
+            <!-- Ping 测试 -->
+            <div class="tool-card">
+                <h3>Ping 测试</h3>
+                <div class="form-group">
+                    <label>主机地址</label>
+                    <input type="text" class="form-control" id="pingHost" placeholder="例如: www.google.com">
+                </div>
+                <button class="btn btn-primary" id="pingBtn" onclick="testPing()">开始测试</button>
+                <div class="result-box" id="pingResult"></div>
+            </div>
+
+            <!-- DNS 查询 -->
+            <div class="tool-card">
+                <h3>DNS 查询</h3>
+                <div class="form-group">
+                    <label>域名</label>
+                    <input type="text" class="form-control" id="dnsDomain" placeholder="例如: www.google.com">
+                </div>
+                <div class="form-group">
+                    <label>记录类型</label>
+                    <select class="form-control" id="dnsType">
+                        <option value="A">A (IPv4)</option>
+                        <option value="AAAA">AAAA (IPv6)</option>
+                        <option value="MX">MX (邮件)</option>
+                        <option value="TXT">TXT (文本)</option>
+                        <option value="CNAME">CNAME (别名)</option>
+                        <option value="NS">NS (域名服务器)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="dnsBtn" onclick="testDns()">查询</button>
+                <div class="result-box" id="dnsResult"></div>
+            </div>
+
+            <!-- Whois 查询 -->
+            <div class="tool-card">
+                <h3>Whois 查询</h3>
+                <div class="form-group">
+                    <label>域名</label>
+                    <input type="text" class="form-control" id="whoisDomain" placeholder="例如: google.com">
+                </div>
+                <button class="btn btn-primary" id="whoisBtn" onclick="testWhois()">查询</button>
+                <div class="result-box" id="whoisResult"></div>
+            </div>
+
+            <!-- 端口扫描 -->
+            <div class="tool-card">
+                <h3>端口扫描</h3>
+                <div class="form-group">
+                    <label>主机地址</label>
+                    <input type="text" class="form-control" id="portHost" placeholder="例如: www.google.com">
+                </div>
+                <div class="form-group">
+                    <label>端口号</label>
+                    <input type="number" class="form-control" id="portNumber" placeholder="例如: 80" value="80">
+                </div>
+                <button class="btn btn-primary" id="portBtn" onclick="testPort()">扫描</button>
+                <div class="result-box" id="portResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/layer/layer.js"></script>
+    <script src="/app/nettools/static/js/tools.js"></script>
+</body>
+</html>

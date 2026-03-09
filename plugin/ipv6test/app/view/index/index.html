@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IPv6 连接测试工具，检测您的网络是否支持 IPv6，测试 IPv4 和 IPv6 连接性能，DNS 解析测试。">
+    <meta name="keywords" content="IPv6测试,IPv6连接测试,IPv4测试,网络测试,DNS测试,小微微工具箱">
+    <title>IPv6 连接测试 - 小微微工具箱</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/app/ipv6test/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← 返回首页</a>
+        
+        <h1>IPv6 连接测试</h1>
+        <p style="color: #666; margin-bottom: 20px;">测试您的网络 IPv4/IPv6 连接性能</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">测试</button>
+            <button class="tab" onclick="switchTab(1)">测试结果详情</button>
+            <button class="tab" onclick="switchTab(2)">镜像 IPv6 测试</button>
+        </div>
+
+        <div class="tab-content" id="tabContent0" style="display: block;">
+            <div id="testResults">
+                <div class="test-item">
+                    <div class="icon info"><span class="loading"></span></div>
+                    <div class="test-content">正在测试中...</div>
+                </div>
+            </div>
+
+            <div class="score-section">
+                <div class="score" id="finalScore">--/10</div>
+                <div class="score-desc" id="scoreDesc">正在评估您的 IPv4 和 IPv6 连接性能...</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tabContent1">
+            <h3>详细测试结果</h3>
+            <div class="result-box">
+                <div class="result-item">
+                    <span class="result-label">IPv4 地址</span>
+                    <span class="result-value" id="detailIpv4">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">IPv6 地址</span>
+                    <span class="result-value" id="detailIpv6">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">当前使用协议</span>
+                    <span class="result-value" id="detailProtocol">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">IPv4 DNS 支持</span>
+                    <span class="result-value" id="detailIpv4Dns">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">IPv6 DNS 支持</span>
+                    <span class="result-value" id="detailIpv6Dns">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">综合评分</span>
+                    <span class="result-value" id="detailScore">--/10</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tabContent2">
+            <h3>镜像 IPv6 测试</h3>
+            <p style="color: #666; line-height: 1.8;">
+                镜像测试功能可以帮助您验证 IPv6 连接的稳定性。<br>
+                此功能将通过不同的测试节点来验证您的 IPv6 连接。<br><br>
+                <strong>提示：</strong>此功能正在开发中，敬请期待。
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>此测试由 <a href="/">小微微工具箱</a> 提供</p>
+            <p><a href="/app/ipv6test/faq">常见问题</a> | <a href="/">返回首页</a></p>
+        </div>
+    </div>
+
+    <script src="/app/ipv6test/static/js/test.js"></script>
+</body>
+</html>

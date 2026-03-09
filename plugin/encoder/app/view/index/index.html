@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编码解码工具 - 小微微工具箱</title>
+    <link rel="icon" href="/favicon.svg">
+    <link rel="stylesheet" href="/app/nettools/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← 返回首页</a>
+        <div class="header">
+            <h1>🔐 编码解码工具</h1>
+            <p>Base64、URL、MD5/SHA、JSON格式化</p>
+        </div>
+        <div class="tools-grid">
+            <div class="tool-card">
+                <h3>Base64 编码/解码</h3>
+                <textarea class="form-control" id="base64Input" rows="4" placeholder="输入文本"></textarea>
+                <div style="margin-top:10px">
+                    <button class="btn btn-primary" onclick="doBase64('encode')">编码</button>
+                    <button class="btn btn-primary" onclick="doBase64('decode')">解码</button>
+                </div>
+                <div class="result-box" id="base64Result"></div>
+            </div>
+            <div class="tool-card">
+                <h3>URL 编码/解码</h3>
+                <textarea class="form-control" id="urlInput" rows="4" placeholder="输入URL"></textarea>
+                <div style="margin-top:10px">
+                    <button class="btn btn-primary" onclick="doUrl('encode')">编码</button>
+                    <button class="btn btn-primary" onclick="doUrl('decode')">解码</button>
+                </div>
+                <div class="result-box" id="urlResult"></div>
+            </div>
+            <div class="tool-card">
+                <h3>哈希生成</h3>
+                <textarea class="form-control" id="hashInput" rows="4" placeholder="输入文本"></textarea>
+                <select class="form-control" id="hashAlgo" style="margin-top:10px">
+                    <option value="md5">MD5</option>
+                    <option value="sha1">SHA1</option>
+                    <option value="sha256">SHA256</option>
+                </select>
+                <button class="btn btn-primary" style="margin-top:10px" onclick="doHash()">生成</button>
+                <div class="result-box" id="hashResult"></div>
+            </div>
+            <div class="tool-card">
+                <h3>JSON 格式化</h3>
+                <textarea class="form-control" id="jsonInput" rows="4" placeholder='输入JSON: {"key":"value"}'></textarea>
+                <div style="margin-top:10px">
+                    <button class="btn btn-primary" onclick="doJson('format')">格式化</button>
+                    <button class="btn btn-primary" onclick="doJson('compress')">压缩</button>
+                </div>
+                <div class="result-box" id="jsonResult"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/layer/layer.js"></script>
+    <script>
+    async function doBase64(action){const text=document.getElementById('base64Input').value;if(!text)return layer.msg('请输入内容');const res=await fetch('/app/encoder/base64',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,action})});const data=await res.json();if(data.code===0){document.getElementById('base64Result').innerHTML='<pre>'+data.data.result+'</pre>';document.getElementById('base64Result').classList.add('show');}else layer.msg(data.msg);}
+    async function doUrl(action){const text=document.getElementById('urlInput').value;if(!text)return layer.msg('请输入内容');const res=await fetch('/app/encoder/url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,action})});const data=await res.json();if(data.code===0){document.getElementById('urlResult').innerHTML='<pre>'+data.data.result+'</pre>';document.getElementById('urlResult').classList.add('show');}else layer.msg(data.msg);}
+    async function doHash(){const text=document.getElementById('hashInput').value;const algo=document.getElementById('hashAlgo').value;if(!text)return layer.msg('请输入内容');const res=await fetch('/app/encoder/hash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,algo})});const data=await res.json();if(data.code===0){document.getElementById('hashResult').innerHTML='<pre>'+data.data.result+'</pre>';document.getElementById('hashResult').classList.add('show');}else layer.msg(data.msg);}
+    async function doJson(action){const text=document.getElementById('jsonInput').value;if(!text)return layer.msg('请输入JSON');const res=await fetch('/app/encoder/json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,action})});const data=await res.json();if(data.code===0){document.getElementById('jsonResult').innerHTML='<pre>'+data.data.result+'</pre>';document.getElementById('jsonResult').classList.add('show');}else layer.msg(data.msg);}
+    </script>
+</body>
+</html>
