@@ -104,6 +104,557 @@ class Dev extends Base
     }
     
     /**
+     * 数据库管理
+     * @return \Webman\Http\Response
+     */
+    public function database()
+    {
+        if ($this->isPost()) {
+            $action = $this->post['action'] ?? '';
+            
+            try {
+                switch ($action) {
+                    case 'tables':
+                        $tables = $this->getDatabaseTables();
+                        return json(['code' => 0, 'data' => $tables]);
+                        
+                    case 'structure':
+                        $table = $this->post['table'] ?? '';
+                        $structure = $this->getTableStructure($table);
+                        return json(['code' => 0, 'data' => $structure]);
+                        
+                    case 'data':
+                        $table = $this->post['table'] ?? '';
+                        $page = $this->post['page'] ?? 1;
+                        $limit = $this->post['limit'] ?? 20;
+                        $data = $this->getTableData($table, $page, $limit);
+                        return json(['code' => 0, 'data' => $data]);
+                        
+                    case 'execute':
+                        $sql = $this->post['sql'] ?? '';
+                        $result = $this->executeSql($sql);
+                        return json(['code' => 0, 'data' => $result]);
+                        
+                    case 'optimize':
+                        $table = $this->post['table'] ?? '';
+                        $this->optimizeTable($table);
+                        return success('表优化成功');
+                        
+                    default:
+                        return error('未知操作');
+                }
+            } catch (\Exception $e) {
+                return error($e->getMessage());
+            }
+        }
+        
+        return $this->view('dev/database');
+    }
+    
+    /**
+     * 文件管理器
+     * @return \Webman\Http\Response
+     */
+    public function fileManager()
+    {
+        if ($this->isPost()) {
+            $action = $this->post['action'] ?? '';
+            
+            try {
+                switch ($action) {
+                    case 'list':
+                        $path = $this->post['path'] ?? '';
+                        $files = $this->getFileList($path);
+                        return json(['code' => 0, 'data' => $files]);
+                        
+                    case 'read':
+                        $file = $this->post['file'] ?? '';
+                        $content = $this->readFile($file);
+                        return json(['code' => 0, 'data' => $content]);
+                        
+                    case 'save':
+                        $file = $this->post['file'] ?? '';
+                        $content = $this->post['content'] ?? '';
+                        $this->saveFile($file, $content);
+                        return success('文件保存成功');
+                        
+                    case 'delete':
+                        $path = $this->post['path'] ?? '';
+                        $this->deleteFile($path);
+                        return success('删除成功');
+                        
+                    case 'create_dir':
+                        $path = $this->post['path'] ?? '';
+                        $name = $this->post['name'] ?? '';
+                        $this->createDirectory($path, $name);
+                        return success('文件夹创建成功');
+                        
+                    case 'download':
+                        $file = $this->post['file'] ?? '';
+                        return $this->downloadFile($file);
+                        
+                    default:
+                        return error('未知操作');
+                }
+            } catch (\Exception $e) {
+                return error($e->getMessage());
+            }
+        }
+        
+        return $this->view('dev/file_manager');
+    }
+    
+    /**
+     * 获取文件列表
+     */
+    protected function getFileList($path)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($path, '/');
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (!is_dir($fullPath)) {
+            throw new \Exception('目录不存在');
+        }
+        
+        $files = scandir($fullPath);
+        $result = [];
+        
+        foreach ($files as $file) {
+            if ($file == '.') {
+                continue;
+            }
+            
+            $filePath = $fullPath . '/' . $file;
+            $relativePath = $path . '/' . $file;
+            
+            $item = [
+                'name' => $file,
+                'path' => ltrim($relativePath, '/'),
+                'is_dir' => is_dir($filePath),
+                'size' => is_file($filePath) ? filesize($filePath) : 0,
+                'size_format' => is_file($filePath) ? $this->formatBytes(filesize($filePath)) : '-',
+                'mtime' => filemtime($filePath),
+                'mtime_format' => date('Y-m-d H:i:s', filemtime($filePath)),
+                'readable' => is_readable($filePath),
+                'writable' => is_writable($filePath),
+                'can_edit' => $this->canEditFile(ltrim($relativePath, '/')),
+                'can_delete' => $this->canDeleteFile(ltrim($relativePath, '/'))
+            ];
+            
+            $result[] = $item;
+        }
+        
+        // 排序：文件夹在前，文件在后
+        usort($result, function($a, $b) {
+            if ($a['is_dir'] && !$b['is_dir']) return -1;
+            if (!$a['is_dir'] && $b['is_dir']) return 1;
+            return strcmp($a['name'], $b['name']);
+        });
+        
+        return [
+            'current_path' => $path,
+            'files' => $result
+        ];
+    }
+    
+    /**
+     * 检查文件是否可以编辑
+     */
+    protected function canEditFile($path)
+    {
+        // 禁止编辑的目录
+        $protectedDirs = [
+            'vendor/',
+            'runtime/',
+            '.git/',
+            'node_modules/'
+        ];
+        
+        foreach ($protectedDirs as $dir) {
+            if (strpos($path, $dir) === 0) {
+                return false;
+            }
+        }
+        
+        // 禁止编辑的文件
+        $protectedFiles = [
+            'composer.json',
+            'composer.lock',
+            'package.json',
+            'package-lock.json',
+            '.env',
+            '.gitignore'
+        ];
+        
+        $fileName = basename($path);
+        if (in_array($fileName, $protectedFiles)) {
+            return false;
+        }
+        
+        // 只允许编辑文本文件
+        $allowedExtensions = [
+            'php', 'html', 'css', 'js', 'json', 'xml', 'txt', 'md',
+            'yml', 'yaml', 'ini', 'conf', 'sql', 'log'
+        ];
+        
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowedExtensions)) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 检查文件是否可以删除
+     */
+    protected function canDeleteFile($path)
+    {
+        // 禁止删除的目录
+        $protectedDirs = [
+            'app',
+            'config',
+            'vendor',
+            'public',
+            'process',
+            'support',
+            '.git'
+        ];
+        
+        // 获取第一级目录
+        $firstDir = explode('/', $path)[0];
+        
+        if (in_array($firstDir, $protectedDirs)) {
+            return false;
+        }
+        
+        // 禁止删除的文件
+        $protectedFiles = [
+            'composer.json',
+            'composer.lock',
+            'start.php',
+            '.env',
+            '.gitignore',
+            'README.md'
+        ];
+        
+        $fileName = basename($path);
+        if (in_array($fileName, $protectedFiles)) {
+            return false;
+        }
+        
+        // 如果是 .. 返回上级，不能删除
+        if ($fileName === '..') {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 读取文件
+     */
+    protected function readFile($file)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($file, '/');
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (!file_exists($fullPath)) {
+            throw new \Exception('文件不存在');
+        }
+        
+        if (!is_file($fullPath)) {
+            throw new \Exception('不是文件');
+        }
+        
+        if (!is_readable($fullPath)) {
+            throw new \Exception('文件不可读');
+        }
+        
+        // 检查是否可以编辑
+        if (!$this->canEditFile($file)) {
+            throw new \Exception('该文件不允许编辑');
+        }
+        
+        // 检查文件大小（限制 1MB）
+        if (filesize($fullPath) > 1024 * 1024) {
+            throw new \Exception('文件太大，无法在线编辑（限制 1MB）');
+        }
+        
+        $content = file_get_contents($fullPath);
+        
+        return [
+            'file' => $file,
+            'content' => $content,
+            'size' => filesize($fullPath),
+            'writable' => is_writable($fullPath)
+        ];
+    }
+    
+    /**
+     * 保存文件
+     */
+    protected function saveFile($file, $content)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($file, '/');
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (!file_exists($fullPath)) {
+            throw new \Exception('文件不存在');
+        }
+        
+        if (!is_writable($fullPath)) {
+            throw new \Exception('文件不可写');
+        }
+        
+        // 检查是否可以编辑
+        if (!$this->canEditFile($file)) {
+            throw new \Exception('该文件不允许编辑');
+        }
+        
+        file_put_contents($fullPath, $content);
+    }
+    
+    /**
+     * 删除文件或文件夹
+     */
+    protected function deleteFile($path)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($path, '/');
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (!file_exists($fullPath)) {
+            throw new \Exception('文件或文件夹不存在');
+        }
+        
+        // 检查是否可以删除
+        if (!$this->canDeleteFile($path)) {
+            throw new \Exception('该文件或文件夹不允许删除');
+        }
+        
+        if (is_file($fullPath)) {
+            unlink($fullPath);
+        } else {
+            $this->deleteDirectory($fullPath);
+        }
+    }
+    
+    /**
+     * 递归删除目录
+     */
+    protected function deleteDirectory($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        
+        $files = array_diff(scandir($dir), ['.', '..']);
+        
+        foreach ($files as $file) {
+            $path = $dir . '/' . $file;
+            
+            if (is_dir($path)) {
+                $this->deleteDirectory($path);
+            } else {
+                unlink($path);
+            }
+        }
+        
+        rmdir($dir);
+    }
+    
+    /**
+     * 创建文件夹
+     */
+    protected function createDirectory($path, $name)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($path, '/') . '/' . $name;
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (file_exists($fullPath)) {
+            throw new \Exception('文件夹已存在');
+        }
+        
+        mkdir($fullPath, 0755, true);
+    }
+    
+    /**
+     * 下载文件
+     */
+    protected function downloadFile($file)
+    {
+        $basePath = base_path();
+        $fullPath = $basePath . '/' . ltrim($file, '/');
+        
+        // 安全检查
+        if (!$this->isPathSafe($fullPath, $basePath)) {
+            throw new \Exception('非法路径');
+        }
+        
+        if (!file_exists($fullPath) || !is_file($fullPath)) {
+            throw new \Exception('文件不存在');
+        }
+        
+        return response()->download($fullPath, basename($file));
+    }
+    
+    /**
+     * 检查路径是否安全
+     */
+    protected function isPathSafe($path, $basePath)
+    {
+        $realPath = realpath($path);
+        $realBasePath = realpath($basePath);
+        
+        // 如果路径不存在，检查父目录
+        if ($realPath === false) {
+            $realPath = realpath(dirname($path));
+        }
+        
+        if ($realPath === false) {
+            return false;
+        }
+        
+        return strpos($realPath, $realBasePath) === 0;
+    }
+    
+    /**
+     * 获取数据库表列表
+     */
+    protected function getDatabaseTables()
+    {
+        $tables = \think\facade\Db::query('SHOW TABLE STATUS');
+        
+        $result = [];
+        foreach ($tables as $table) {
+            $result[] = [
+                'name' => $table['Name'],
+                'engine' => $table['Engine'],
+                'rows' => $table['Rows'],
+                'data_length' => $table['Data_length'],
+                'index_length' => $table['Index_length'],
+                'total_length' => $table['Data_length'] + $table['Index_length'],
+                'size_format' => $this->formatBytes($table['Data_length'] + $table['Index_length']),
+                'comment' => $table['Comment']
+            ];
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 获取表结构
+     */
+    protected function getTableStructure($table)
+    {
+        if (empty($table)) {
+            throw new \Exception('请指定表名');
+        }
+        
+        // 获取字段信息
+        $columns = \think\facade\Db::query("SHOW FULL COLUMNS FROM `{$table}`");
+        
+        // 获取索引信息
+        $indexes = \think\facade\Db::query("SHOW INDEX FROM `{$table}`");
+        
+        // 获取建表语句
+        $createTable = \think\facade\Db::query("SHOW CREATE TABLE `{$table}`");
+        
+        return [
+            'columns' => $columns,
+            'indexes' => $indexes,
+            'create_sql' => $createTable[0]['Create Table'] ?? ''
+        ];
+    }
+    
+    /**
+     * 获取表数据
+     */
+    protected function getTableData($table, $page = 1, $limit = 20)
+    {
+        if (empty($table)) {
+            throw new \Exception('请指定表名');
+        }
+        
+        $offset = ($page - 1) * $limit;
+        
+        // 获取总数
+        $total = \think\facade\Db::query("SELECT COUNT(*) as count FROM `{$table}`");
+        $count = $total[0]['count'] ?? 0;
+        
+        // 获取数据
+        $data = \think\facade\Db::query("SELECT * FROM `{$table}` LIMIT {$offset}, {$limit}");
+        
+        return [
+            'total' => $count,
+            'page' => $page,
+            'limit' => $limit,
+            'data' => $data
+        ];
+    }
+    
+    /**
+     * 执行 SQL（只读模式）
+     */
+    protected function executeSql($sql)
+    {
+        if (empty($sql)) {
+            throw new \Exception('请输入 SQL 语句');
+        }
+        
+        // 只允许 SELECT 查询
+        $sql = trim($sql);
+        if (!preg_match('/^SELECT/i', $sql)) {
+            throw new \Exception('安全限制：只允许执行 SELECT 查询');
+        }
+        
+        $result = \think\facade\Db::query($sql);
+        
+        return [
+            'sql' => $sql,
+            'rows' => count($result),
+            'data' => $result
+        ];
+    }
+    
+    /**
+     * 优化表
+     */
+    protected function optimizeTable($table)
+    {
+        if (empty($table)) {
+            throw new \Exception('请指定表名');
+        }
+        
+        \think\facade\Db::execute("OPTIMIZE TABLE `{$table}`");
+    }
+    
+    /**
      * 获取日志文件列表
      */
     protected function getLogFiles()

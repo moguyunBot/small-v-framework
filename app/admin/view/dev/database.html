@@ -1,0 +1,390 @@
+{extend name="base"}
+{block name="main"}
+
+<div class="row" id="app">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="mdi mdi-database"></i> 数据库管理</h5>
+      </div>
+      <div class="card-body">
+        <!-- 标签页 -->
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'tables'}" @click="activeTab = 'tables'" href="javascript:void(0)">
+              <i class="mdi mdi-table"></i> 数据表
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'structure'}" @click="activeTab = 'structure'" href="javascript:void(0)">
+              <i class="mdi mdi-table-cog"></i> 表结构
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'data'}" @click="activeTab = 'data'" href="javascript:void(0)">
+              <i class="mdi mdi-table-eye"></i> 表数据
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" :class="{active: activeTab === 'sql'}" @click="activeTab = 'sql'" href="javascript:void(0)">
+              <i class="mdi mdi-code-tags"></i> SQL 查询
+            </a>
+          </li>
+        </ul>
+        
+        <!-- 数据表列表 -->
+        <div v-show="activeTab === 'tables'">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>表名</th>
+                  <th>引擎</th>
+                  <th>行数</th>
+                  <th>大小</th>
+                  <th>注释</th>
+                  <th width="200">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="table in tables" :key="table.name">
+                  <td><code>{{ table.name }}</code></td>
+                  <td>{{ table.engine }}</td>
+                  <td>{{ table.rows }}</td>
+                  <td>{{ table.size_format }}</td>
+                  <td>{{ table.comment || '-' }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-primary" @click="viewStructure(table.name)">结构</button>
+                      <button class="btn btn-info" @click="viewData(table.name)">数据</button>
+                      <button class="btn btn-warning" @click="optimizeTable(table.name)">优化</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- 表结构 -->
+        <div v-show="activeTab === 'structure'">
+          <div v-if="selectedTable">
+            <h6>表名: <code>{{ selectedTable }}</code></h6>
+            
+            <!-- 字段信息 -->
+            <h6 class="mt-3">字段信息</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th>字段名</th>
+                    <th>类型</th>
+                    <th>允许空</th>
+                    <th>键</th>
+                    <th>默认值</th>
+                    <th>额外</th>
+                    <th>注释</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="col in structure.columns" :key="col.Field">
+                    <td><code>{{ col.Field }}</code></td>
+                    <td>{{ col.Type }}</td>
+                    <td>{{ col.Null }}</td>
+                    <td>{{ col.Key }}</td>
+                    <td>{{ col.Default || '-' }}</td>
+                    <td>{{ col.Extra || '-' }}</td>
+                    <td>{{ col.Comment || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 索引信息 -->
+            <h6 class="mt-3">索引信息</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th>索引名</th>
+                    <th>字段</th>
+                    <th>唯一</th>
+                    <th>类型</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(idx, index) in structure.indexes" :key="index">
+                    <td><code>{{ idx.Key_name }}</code></td>
+                    <td>{{ idx.Column_name }}</td>
+                    <td>{{ idx.Non_unique == 0 ? '是' : '否' }}</td>
+                    <td>{{ idx.Index_type }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 建表语句 -->
+            <h6 class="mt-3">建表语句</h6>
+            <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;"><code>{{ structure.create_sql }}</code></pre>
+          </div>
+          <div v-else class="text-center text-muted py-5">
+            请先在"数据表"标签中选择一个表
+          </div>
+        </div>
+        
+        <!-- 表数据 -->
+        <div v-show="activeTab === 'data'">
+          <div v-if="selectedTable">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">表名: <code>{{ selectedTable }}</code> (共 {{ tableData.total }} 条记录)</h6>
+              <div>
+                <button class="btn btn-sm btn-secondary" @click="loadTableData(1)">
+                  <i class="mdi mdi-refresh"></i> 刷新
+                </button>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered table-hover">
+                <thead>
+                  <tr>
+                    <th v-for="(value, key) in tableData.data[0]" :key="key">{{ key }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, index) in tableData.data" :key="index">
+                    <td v-for="(value, key) in row" :key="key">
+                      <span v-if="value === null" class="text-muted">NULL</span>
+                      <span v-else>{{ value }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav v-if="tableData.total > tableData.limit">
+              <ul class="pagination">
+                <li class="page-item" :class="{disabled: tableData.page === 1}">
+                  <a class="page-link" @click="loadTableData(tableData.page - 1)" href="javascript:void(0)">上一页</a>
+                </li>
+                <li class="page-item active">
+                  <span class="page-link">{{ tableData.page }} / {{ Math.ceil(tableData.total / tableData.limit) }}</span>
+                </li>
+                <li class="page-item" :class="{disabled: tableData.page >= Math.ceil(tableData.total / tableData.limit)}">
+                  <a class="page-link" @click="loadTableData(tableData.page + 1)" href="javascript:void(0)">下一页</a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+          <div v-else class="text-center text-muted py-5">
+            请先在"数据表"标签中选择一个表
+          </div>
+        </div>
+        
+        <!-- SQL 查询 -->
+        <div v-show="activeTab === 'sql'">
+          <div class="alert alert-warning" role="alert">
+            <i class="mdi mdi-alert"></i> <strong>安全提示：</strong>只允许执行 SELECT 查询语句
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">SQL 语句</label>
+            <textarea class="form-control" v-model="sqlQuery" rows="5" placeholder="输入 SELECT 查询语句..."></textarea>
+          </div>
+          
+          <button class="btn btn-primary" @click="executeSql">
+            <i class="mdi mdi-play"></i> 执行查询
+          </button>
+          
+          <!-- 查询结果 -->
+          <div v-if="sqlResult.data" class="mt-4">
+            <h6>查询结果 ({{ sqlResult.rows }} 行)</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    <th v-for="(value, key) in sqlResult.data[0]" :key="key">{{ key }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, index) in sqlResult.data" :key="index">
+                    <td v-for="(value, key) in row" :key="key">
+                      <span v-if="value === null" class="text-muted">NULL</span>
+                      <span v-else>{{ value }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+  data() {
+    return {
+      activeTab: 'tables',
+      tables: [],
+      selectedTable: '',
+      structure: {
+        columns: [],
+        indexes: [],
+        create_sql: ''
+      },
+      tableData: {
+        total: 0,
+        page: 1,
+        limit: 20,
+        data: []
+      },
+      sqlQuery: '',
+      sqlResult: {
+        rows: 0,
+        data: null
+      }
+    };
+  },
+  mounted() {
+    this.loadTables();
+  },
+  methods: {
+    async loadTables() {
+      try {
+        const res = await this.postAsync('database', { action: 'tables' });
+        if (res.code === 0) {
+          this.tables = res.data;
+        }
+      } catch (e) {
+        console.error('加载表列表失败:', e);
+      }
+    },
+    
+    async viewStructure(table) {
+      this.selectedTable = table;
+      this.activeTab = 'structure';
+      
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('database', {
+          action: 'structure',
+          table: table
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.structure = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    async viewData(table) {
+      this.selectedTable = table;
+      this.activeTab = 'data';
+      this.loadTableData(1);
+    },
+    
+    async loadTableData(page) {
+      if (!this.selectedTable) return;
+      
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('database', {
+          action: 'data',
+          table: this.selectedTable,
+          page: page,
+          limit: 20
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.tableData = res.data;
+        } else {
+          layer.msg(res.msg || '加载失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('加载失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    async optimizeTable(table) {
+      this.confirm('确定要优化表 ' + table + ' 吗？', async () => {
+        const loading = layer.load();
+        
+        try {
+          const res = await this.postAsync('database', {
+            action: 'optimize',
+            table: table
+          });
+          
+          layer.close(loading);
+          
+          if (res.code === 1) {
+            layer.msg(res.msg, { icon: 1 });
+            this.loadTables();
+          } else {
+            layer.msg(res.msg || '优化失败', { icon: 2 });
+          }
+        } catch (e) {
+          layer.close(loading);
+          layer.msg('优化失败: ' + e.message, { icon: 2 });
+        }
+      });
+    },
+    
+    async executeSql() {
+      if (!this.sqlQuery.trim()) {
+        layer.msg('请输入 SQL 语句', { icon: 0 });
+        return;
+      }
+      
+      const loading = layer.load();
+      
+      try {
+        const res = await this.postAsync('database', {
+          action: 'execute',
+          sql: this.sqlQuery
+        });
+        
+        layer.close(loading);
+        
+        if (res.code === 0) {
+          this.sqlResult = res.data;
+          layer.msg('查询成功', { icon: 1 });
+        } else {
+          layer.msg(res.msg || '查询失败', { icon: 2 });
+        }
+      } catch (e) {
+        layer.close(loading);
+        layer.msg('查询失败: ' + e.message, { icon: 2 });
+      }
+    },
+    
+    postAsync(url, data) {
+      return new Promise((resolve, reject) => {
+        this.post(url, data, (res) => {
+          resolve(res);
+        });
+      });
+    }
+  }
+}).mount('#app');
+</script>
+{/block}
