@@ -9,7 +9,138 @@ class Index extends Base{
     protected $noNeedLogin = ['login','captcha'];
     
     public function index(){
-        return $this->view('');
+        // 获取系统监控数据
+        $systemData = $this->getSystemData();
+        return $this->view('', ['systemData' => $systemData]);
+    }
+    
+    /**
+     * 获取系统数据（AJAX）
+     */
+    public function getSystemData()
+    {
+        $data = $this->getSystemMonitorData();
+        
+        if ($this->isPost()) {
+            return json(['code' => 0, 'data' => $data]);
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * 获取系统监控数据
+     */
+    protected function getSystemMonitorData()
+    {
+        $data = [];
+        
+        // 内存信息
+        $data['memory'] = $this->getMemoryInfo();
+        
+        // CPU 信息
+        $data['cpu'] = $this->getCpuInfo();
+        
+        // 磁盘信息
+        $data['disk'] = $this->getDiskInfo();
+        
+        // PHP 信息
+        $data['php'] = [
+            'version' => PHP_VERSION,
+            'sapi' => PHP_SAPI,
+        ];
+        
+        // 数据库信息
+        $data['database'] = $this->getDatabaseInfo();
+        
+        return $data;
+    }
+    
+    protected function getMemoryInfo()
+    {
+        $memory = [];
+        $memory['php_used'] = memory_get_usage(true);
+        $memory['php_used_format'] = $this->formatBytes($memory['php_used']);
+        $memory['php_limit'] = ini_get('memory_limit');
+        
+        if (PHP_OS === 'Linux' && file_exists('/proc/meminfo')) {
+            $meminfo = file_get_contents('/proc/meminfo');
+            preg_match('/MemTotal:\s+(\d+)/', $meminfo, $total);
+            preg_match('/MemAvailable:\s+(\d+)/', $meminfo, $available);
+            
+            if (isset($total[1]) && isset($available[1])) {
+                $memory['system_total'] = $total[1] * 1024;
+                $memory['system_available'] = $available[1] * 1024;
+                $memory['system_used'] = $memory['system_total'] - $memory['system_available'];
+                $memory['system_usage_percent'] = round(($memory['system_used'] / $memory['system_total']) * 100, 2);
+                $memory['system_total_format'] = $this->formatBytes($memory['system_total']);
+                $memory['system_used_format'] = $this->formatBytes($memory['system_used']);
+            }
+        }
+        
+        return $memory;
+    }
+    
+    protected function getCpuInfo()
+    {
+        $cpu = [];
+        if (PHP_OS === 'Linux') {
+            $loadavg = sys_getloadavg();
+            $cpu['load_1min'] = round($loadavg[0], 2);
+            $cpu['load_5min'] = round($loadavg[1], 2);
+            $cpu['load_15min'] = round($loadavg[2], 2);
+        }
+        return $cpu;
+    }
+    
+    protected function getDiskInfo()
+    {
+        $disk = [];
+        $disk['total'] = disk_total_space('/');
+        $disk['free'] = disk_free_space('/');
+        $disk['used'] = $disk['total'] - $disk['free'];
+        $disk['usage_percent'] = round(($disk['used'] / $disk['total']) * 100, 2);
+        $disk['total_format'] = $this->formatBytes($disk['total']);
+        $disk['used_format'] = $this->formatBytes($disk['used']);
+        $disk['free_format'] = $this->formatBytes($disk['free']);
+        return $disk;
+    }
+    
+    protected function getDatabaseInfo()
+    {
+        $db = [];
+        try {
+            $version = \think\facade\Db::query('SELECT VERSION() as version');
+            $db['version'] = $version[0]['version'] ?? 'Unknown';
+            
+            // 获取数据库名
+            $dbConfig = config('database.connections.mysql');
+            $dbName = $dbConfig['database'] ?? 'www_xvv_cc';
+            
+            // 表数量
+            $tables = \think\facade\Db::query("SELECT COUNT(*) as count FROM information_schema.TABLES WHERE table_schema = '{$dbName}'");
+            $db['tables_count'] = $tables[0]['count'] ?? 0;
+            
+            // 数据库大小
+            $size = \think\facade\Db::query("SELECT SUM(data_length + index_length) as size FROM information_schema.TABLES WHERE table_schema = '{$dbName}'");
+            $db['size'] = $size[0]['size'] ?? 0;
+            $db['size_format'] = $this->formatBytes($db['size']);
+            
+        } catch (\Exception $e) {
+            $db['error'] = true;
+            $db['tables_count'] = 0;
+            $db['size_format'] = 'N/A';
+        }
+        return $db;
+    }
+    
+    protected function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+            $bytes /= 1024;
+        }
+        return round($bytes, $precision) . ' ' . $units[$i];
     }
     
     public function login(){

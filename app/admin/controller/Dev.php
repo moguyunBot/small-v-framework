@@ -27,7 +27,7 @@ class Dev extends Base
         $list = ConfigGroupModel::order('sort asc, id desc')
             ->paginate(20);
         
-        return $this->view('configgroup/index', [
+        return $this->view('dev/configgroup/index', [
             'list' => $list
         ]);
     }
@@ -60,7 +60,7 @@ class Dev extends Base
             return success('添加成功', 'groupIndex');
         }
         
-        return $this->view('configgroup/add');
+        return $this->view('dev/configgroup/add');
     }
     
     /**
@@ -100,7 +100,7 @@ class Dev extends Base
             return success('编辑成功', 'groupIndex');
         }
         
-        return $this->view('configgroup/edit', [
+        return $this->view('dev/configgroup/edit', [
             'group' => $group
         ]);
     }
@@ -197,7 +197,7 @@ class Dev extends Base
             return error('配置分组不存在');
         }
         
-        return $this->view('config/manage', [
+        return $this->view('dev/config_manage', [
             'groupKey' => $groupKey,
             'group' => $group,
             'list' => $list
@@ -263,7 +263,7 @@ class Dev extends Base
             return success('添加成功', 'configManage?group=' . $groupKey);
         }
         
-        return $this->view('config/add_config', [
+        return $this->view('dev/config_add', [
             'group' => $group
         ]);
     }
@@ -333,7 +333,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('config/edit_config', [
+        return $this->view('dev/config_edit', [
             'config' => $config,
             'group' => $group
         ]);

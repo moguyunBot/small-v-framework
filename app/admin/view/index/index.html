@@ -1,260 +1,126 @@
 {extend name="base"}
 {block name="main"}
-<div class="row">
 
-  <div class="col-md-6 col-xl-3">
-    <div class="card bg-primary text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="avatar-md rounded-circle bg-white bg-opacity-25 avatar-box">
-            <i class="mdi mdi-currency-cny fs-4"></i>
-          </span>
-          <span class="fs-4">102,125.00</span>
-        </div>
-        <div class="text-end">今日收入</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="card bg-danger text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="avatar-md rounded-circle bg-white bg-opacity-25 avatar-box">
-            <i class="mdi mdi-account fs-4"></i>
-          </span>
-          <span class="fs-4">920,000</span>
-        </div>
-        <div class="text-end">用户总数</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="card bg-success text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="avatar-md rounded-circle bg-white bg-opacity-25 avatar-box">
-            <i class="mdi mdi-arrow-down-bold fs-4"></i>
-          </span>
-          <span class="fs-4">34,005,000</span>
-        </div>
-        <div class="text-end">下载总量</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="card bg-purple text-white">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <span class="avatar-md rounded-circle bg-white bg-opacity-25 avatar-box">
-            <i class="mdi mdi-comment-outline fs-4"></i>
-          </span>
-          <span class="fs-4">153 条</span>
-        </div>
-        <div class="text-end">新增留言</div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<div class="row">
-
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">每周用户</div>
-      </div>
-      <div class="card-body">
-        <canvas class="js-chartjs-bars"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">交易历史记录</div>
-      </div>
-      <div class="card-body">
-        <canvas class="js-chartjs-lines"></canvas>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<div class="row">
-
+<!-- 系统监控卡片 -->
+<div class="row mb-3" id="system-monitor">
   <div class="col-lg-12">
     <div class="card">
-      <header class="card-header">
-        <div class="card-title">项目信息</div>
-      </header>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="mdi mdi-monitor-dashboard"></i> 系统监控</h5>
+        <small class="text-muted">更新时间: <span id="update-time">{{ updateTime }}</span></small>
+      </div>
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>项目名称</th>
-                <th>开始日期</th>
-                <th>截止日期</th>
-                <th>状态</th>
-                <th>进度</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1</td>
-                <td>设计新主题</td>
-                <td>10/02/2019</td>
-                <td>12/05/2019</td>
-                <td><span class="badge bg-warning">待定</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-warning" style="width: 45%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>网站重新设计</td>
-                <td>01/03/2019</td>
-                <td>12/04/2019</td>
-                <td><span class="badge bg-success">进行中</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-success" style="width: 30%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>3</td>
-                <td>模型设计</td>
-                <td>10/10/2019</td>
-                <td>12/11/2019</td>
-                <td><span class="badge bg-warning">待定</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-warning" style="width: 25%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>4</td>
-                <td>后台管理系统模板设计</td>
-                <td>25/01/2019</td>
-                <td>09/05/2019</td>
-                <td><span class="badge bg-success">进行中</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-success" style="width: 55%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>5</td>
-                <td>前端设计</td>
-                <td>10/10/2019</td>
-                <td>12/12/2019</td>
-                <td><span class="badge bg-danger">未开始</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-danger" style="width: 0%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>6</td>
-                <td>桌面软件测试</td>
-                <td>10/01/2019</td>
-                <td>29/03/2019</td>
-                <td><span class="badge bg-success">进行中</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-success" style="width: 75%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>7</td>
-                <td>APP改版开发</td>
-                <td>25/02/2019</td>
-                <td>12/05/2019</td>
-                <td><span class="badge bg-danger">暂停</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-danger" style="width: 15%;"></div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>8</td>
-                <td>Logo设计</td>
-                <td>10/02/2019</td>
-                <td>01/03/2019</td>
-                <td><span class="badge bg-warning">完成</span></td>
-                <td>
-                  <div class="progress progress-xs">
-                    <div class="progress-bar progress-bar-striped bg-success" style="width: 100%;"></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="row">
+          <!-- 内存使用 -->
+          <div class="col-md-3 mb-3">
+            <div class="d-flex align-items-center">
+              <div class="avatar-md rounded-circle bg-primary bg-opacity-10 me-3 d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-memory text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">内存使用</h6>
+                <p class="mb-0 text-muted">{{ systemData.memory.system_used_format }} / {{ systemData.memory.system_total_format }}</p>
+                <small class="text-muted">{{ systemData.memory.system_usage_percent }}%</small>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 磁盘使用 -->
+          <div class="col-md-3 mb-3">
+            <div class="d-flex align-items-center">
+              <div class="avatar-md rounded-circle bg-success bg-opacity-10 me-3 d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-harddisk text-success fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">磁盘使用</h6>
+                <p class="mb-0 text-muted">{{ systemData.disk.used_format }} / {{ systemData.disk.total_format }}</p>
+                <small class="text-muted">{{ systemData.disk.usage_percent }}%</small>
+              </div>
+            </div>
+          </div>
+          
+          <!-- CPU 负载 -->
+          <div class="col-md-3 mb-3">
+            <div class="d-flex align-items-center">
+              <div class="avatar-md rounded-circle bg-info bg-opacity-10 me-3 d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-chip text-info fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">CPU 负载</h6>
+                <p class="mb-0 text-muted">1分钟: {{ systemData.cpu.load_1min }}</p>
+                <small class="text-muted">5分钟: {{ systemData.cpu.load_5min }}</small>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 数据库信息 -->
+          <div class="col-md-3 mb-3">
+            <div class="d-flex align-items-center">
+              <div class="avatar-md rounded-circle bg-warning bg-opacity-10 me-3 d-flex align-items-center justify-content-center">
+                <i class="mdi mdi-database text-warning fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">数据库</h6>
+                <p class="mb-0 text-muted">{{ systemData.database.tables_count }} 张表 / {{ systemData.database.size_format }}</p>
+                <small class="text-muted">MySQL {{ systemData.database.version }}</small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
 </div>
+
 {/block}
 {block name="script"}
-<script type="text/javascript" src="/static/js/chart.min.js"></script>
-<script type="text/javascript">
-$(document).ready(function(e) {
-	var $dashChartBarsCnt = jQuery('.js-chartjs-bars')[0].getContext('2d'),
-		$dashChartLinesCnt = jQuery('.js-chartjs-lines')[0].getContext('2d');
-
-	var $dashChartBarsData = {
-		labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-		datasets: [{
-			label: '注册用户',
-			borderWidth: 1,
-			borderColor: 'rgba(0, 0, 0, 0)',
-			backgroundColor: 'rgba(0, 123, 255,0.5)',
-			hoverBackgroundColor: "rgba(0, 123, 255, 0.7)",
-			hoverBorderColor: "rgba(0, 0, 0, 0)",
-			data: [2500, 1500, 1200, 3200, 4800, 3500, 1500]
-		}]
-	};
-	var $dashChartLinesData = {
-		labels: ['2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013',
-			'2014'
-		],
-		datasets: [{
-			label: '交易资金',
-			data: [20, 25, 40, 30, 45, 40, 55, 40, 48, 40, 42, 50],
-			borderColor: '#007bff',
-			backgroundColor: 'rgba(0, 123, 255, 0.175)',
-			borderWidth: 1,
-			fill: false,
-			lineTension: 0.5
-		}]
-	};
-
-	new Chart($dashChartBarsCnt, {
-		type: 'bar',
-		data: $dashChartBarsData
-	});
-
-	var myLineChart = new Chart($dashChartLinesCnt, {
-		type: 'line',
-		data: $dashChartLinesData,
-	});
-});
+<script>
+// 系统监控自动刷新
+createVueApp({
+  data() {
+    return {
+      systemData: {$systemData|json_encode|raw},
+      updateTime: '{:date("H:i:s")}',
+      timer: null
+    };
+  },
+  mounted() {
+    this.startAutoRefresh();
+  },
+  beforeUnmount() {
+    this.stopAutoRefresh();
+  },
+  methods: {
+    async loadSystemData() {
+      try {
+        const res = await fetch('/admin/index/getSystemData', {
+          method: 'POST'
+        }).then(r => r.json());
+        
+        if (res.code === 0) {
+          this.systemData = res.data;
+          this.updateTime = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        }
+      } catch (e) {
+        console.error('获取系统数据失败:', e);
+      }
+    },
+    
+    startAutoRefresh() {
+      // 每5秒刷新一次
+      this.timer = setInterval(() => {
+        this.loadSystemData();
+      }, 5000);
+    },
+    
+    stopAutoRefresh() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    }
+  }
+}).mount('#system-monitor');
 </script>
+
 {/block}
