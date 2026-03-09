@@ -94,7 +94,7 @@ class Config extends Base
                 
                 // 保存到数据库
                 foreach ($this->post as $groupKey => $groupData) {
-                    ConfigModel::saveConfigs('', $groupKey, $groupData['config']);
+                    ConfigModel::saveConfigs($groupKey, $groupData['config']);
                 }
                 
             } catch (\Exception $e) {
