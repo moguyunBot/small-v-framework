@@ -37,11 +37,17 @@ class Role extends Base{
             }
             return success('添加成功','index');
         }
-        $rules = Rule::field('id,pid parent,title text')->where(['status'=>1])->order('sort asc,id asc')->select()->map(function ($v) {
-            $v['parent'] = $v['parent'] ?: '#';
-            return $v;
-        });
-        return $this->view('',['rules'=>$rules]);
+        
+        // 获取系统权限（树形结构）
+        $systemRules = $this->getTreeRules('system', []);
+        
+        // 获取插件权限（按插件分组）
+        $pluginRules = $this->getPluginRules([]);
+        
+        return $this->view('',[
+            'systemRules' => $systemRules,
+            'pluginRules' => $pluginRules,
+        ]);
     }
     
     /**
@@ -50,6 +56,7 @@ class Role extends Base{
      */
     public function edit(){
         $role = $this->model::find($this->get['id']);
+        
         if($this->isPost()){
             try{
                 validate([
@@ -64,24 +71,70 @@ class Role extends Base{
             }
             return success('修改成功','index');
         }
-        $rules = Rule::field('id,pid parent,title text')->where(['status'=>1])->order('sort asc,id asc')->select()->map(function ($v) use ($role) {
-            $v['parent'] = $v['parent'] ?: '#';
-            if ($role['rules'] == '*') {
+        
+        // 当前角色的权限ID数组
+        $checkedRules = $role['rules'] == '*' ? [] : explode(',', $role['rules']);
+        
+        // 获取系统权限（树形结构）
+        $systemRules = $this->getTreeRules('system', $checkedRules);
+        
+        // 获取插件权限（按插件分组）
+        $pluginRules = $this->getPluginRules($checkedRules);
+        
+        return $this->view('',[
+            'systemRules' => $systemRules,
+            'pluginRules' => $pluginRules,
+            'role'        => $role,
+        ]);
+    }
+    
+    /**
+     * 获取树形权限列表
+     */
+    protected function getTreeRules(string $type, array $checkedRules): array
+    {
+        return Rule::field('id,pid parent,title text')
+            ->where(['status' => 1, 'type' => $type])
+            ->order('sort asc,id asc')
+            ->select()
+            ->map(function ($v) use ($checkedRules) {
+                $v['parent'] = $v['parent'] ?: '#';
                 $v['state'] = [
-                    'selected'      =>  true
+                    'selected' => in_array($v['id'], $checkedRules)
                 ];
-            } else if (!Rule::where(['pid' => $v['id']])->find() && in_array($v['id'], explode(',', $role['rules']))) {
-                $v['state'] = [
-                    'selected'      =>  true
-                ];
-            } else {
-                $v['state'] = [
-                    'selected'      =>  false
+                return $v;
+            })->toArray();
+    }
+    
+    /**
+     * 获取插件权限（按插件分组）
+     */
+    protected function getPluginRules(array $checkedRules): array
+    {
+        $rules = Rule::where(['status' => 1, 'type' => 'plugin'])
+            ->order('plugin asc, sort asc, id asc')
+            ->select();
+        
+        $grouped = [];
+        foreach ($rules as $rule) {
+            $plugin = $rule['plugin'] ?? 'other';
+            if (!isset($grouped[$plugin])) {
+                // 获取插件信息
+                $pluginInfo = \app\admin\model\Plugin::where('identifier', $plugin)->find();
+                $grouped[$plugin] = [
+                    'name'   => $pluginInfo['name'] ?? $plugin,
+                    'icon'   => $pluginInfo['icon'] ?? 'mdi mdi-puzzle',
+                    'rules'  => [],
                 ];
             }
-            return $v;
-        });
-        return $this->view('',['rules'=>$rules,'role'=>$role]);
+            
+            $rule['state'] = [
+                'selected' => in_array($rule['id'], $checkedRules)
+            ];
+            $grouped[$plugin]['rules'][] = $rule->toArray();
+        }
+        
+        return $grouped;
     }
     
     /**

@@ -104,4 +104,82 @@ class Rule extends \think\Model
         }
         return $html;
     }
+    
+    /**
+     * 获取系统权限树（不包含插件）
+     */
+    public static function getSystemRules(): array
+    {
+        return self::where('type', 'system')
+            ->where('status', 1)
+            ->order('sort asc, id asc')
+            ->select()
+            ->toArray();
+    }
+    
+    /**
+     * 获取插件权限（按插件分组）
+     */
+    public static function getPluginRules(): array
+    {
+        $rules = self::where('type', 'plugin')
+            ->where('status', 1)
+            ->order('plugin asc, sort asc, id asc')
+            ->select()
+            ->toArray();
+        
+        $grouped = [];
+        foreach ($rules as $rule) {
+            $plugin = $rule['plugin'] ?? 'other';
+            if (!isset($grouped[$plugin])) {
+                $grouped[$plugin] = [
+                    'name'  => $rule['plugin_name'] ?? $plugin,
+                    'icon'  => 'mdi mdi-puzzle',
+                    'rules' => [],
+                ];
+            }
+            $grouped[$plugin]['rules'][] = $rule;
+        }
+        
+        return $grouped;
+    }
+    
+    /**
+     * 检查是否有指定权限
+     * @param int $ruleId 规则ID
+     * @param array $roleIds 角色ID列表
+     */
+    public static function checkPermission(int $ruleId, array $roleIds): bool
+    {
+        if (empty($roleIds)) {
+            return false;
+        }
+        
+        // 获取角色的所有权限
+        $rules = Role::whereIn('id', $roleIds)->column('rules');
+        $allRuleIds = [];
+        
+        foreach ($rules as $ruleString) {
+            if (empty($ruleString)) {
+                continue;
+            }
+            // 超级管理员
+            if ($ruleString === '*' || in_array('*', explode(',', $ruleString))) {
+                return true;
+            }
+            $allRuleIds = array_merge($allRuleIds, explode(',', $ruleString));
+        }
+        
+        return in_array($ruleId, $allRuleIds);
+    }
+    
+    /**
+     * 根据路径查找权限规则
+     */
+    public static function findByPath(string $path): ?self
+    {
+        return self::where('href', $path)
+            ->where('status', 1)
+            ->find();
+    }
 }

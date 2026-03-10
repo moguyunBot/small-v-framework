@@ -1,6 +1,7 @@
 <?php
 namespace app\admin\middleware;
 
+use ReflectionClass;
 use ReflectionException;
 use support\exception\BusinessException;
 use Webman\Http\Request;
@@ -9,124 +10,224 @@ use Webman\MiddlewareInterface;
 use app\admin\model\Role;
 use app\admin\model\Rule;
 
+/**
+ * 后台权限验证中间件
+ */
 class Auth implements MiddlewareInterface
 {
     /**
-     * @param Request $request
-     * @param callable $handler
-     * @return Response
+     * 控制器反射缓存
+     * @var array<string, ReflectionClass>
+     */
+    protected static array $reflectionCache = [];
+
+    /**
+     * 处理请求
      * @throws ReflectionException|BusinessException
      */
     public function process(Request $request, callable $handler): Response
     {
         $controller = $request->controller;
         $action = $request->action;
+        
         $code = 0;
         $msg = '';
-        if (!self::canAccess($controller, $action, $code, $msg)) {
-            if ($request->expectsJson()) {
-                $response = json(['code' => $code, 'msg' => $msg, 'data' => []]);
-            } else {
-                if ($code === 401) {
-                  $response = admin_error_401_script();
-                } else {
-                    // 返回403无权限页面
-                    $response = jump($msg, '', 0, 'error', '403 - 无权限访问');
-                }
-            }
-
-        } else {
-            $response = $request->method() == 'OPTIONS' ? response('') : $handler($request);
+        
+        if (self::canAccess($controller, $action, $code, $msg)) {
+            return $request->method() === 'OPTIONS' 
+                ? response('') 
+                : $handler($request);
         }
 
-        return $response;
+        // 无权访问，返回相应响应
+        if ($request->expectsJson()) {
+            return json(['code' => $code, 'msg' => $msg, 'data' => []]);
+        }
 
+        return $code === 401 
+            ? admin_error_401_script()
+            : jump($msg, '', 0, 'error', '403 - 无权限访问');
     }
-    public static function canAccess(string $controller, string $action, int &$code = 0, string &$msg = ''): bool
+
+    /**
+     * 检查是否有权限访问
+     */
+    public static function canAccess(?string $controller, string $action, int &$code = 0, string &$msg = ''): bool
     {
-        // 无控制器信息说明是函数调用，函数不属于任何控制器，鉴权操作应该在函数内部完成。
+        // 无控制器信息（函数调用），鉴权应在函数内部完成
         if (!$controller) {
             return true;
         }
-        // 获取控制器鉴权信息
-        $class = new \ReflectionClass($controller);
-        $properties = $class->getDefaultProperties();
+
+        $properties = self::getControllerProperties($controller);
         $noNeedLogin = $properties['noNeedLogin'] ?? [];
         $noNeedAuth = $properties['noNeedAuth'] ?? [];
 
         // 不需要登录
-        if (in_array($action, $noNeedLogin)) {
+        if (in_array($action, $noNeedLogin, true)) {
             return true;
         }
 
-        // 获取登录信息
+        // 检查登录
         $admin = admin();
         if (!$admin) {
             $msg = '请登录';
-            // 401是未登录固定的返回码
             $code = 401;
             return false;
         }
 
         // 不需要鉴权
-        if (in_array($action, $noNeedAuth)) {
+        if (in_array($action, $noNeedAuth, true)) {
             return true;
         }
 
-        // 当前管理员无角色
-        $roles = $admin['roles'];
-        if (!$roles) {
-            $msg = '无权限';
-            $code = 2;
-            return false;
-        }
-
-        // 角色没有规则
-        $rules = Role::whereIn('id', $roles)->column('rules');
-        $rule_ids = [];
-        foreach ($rules as $rule_string) {
-            if (!$rule_string) {
-                continue;
-            }
-            $rule_ids = array_merge($rule_ids, explode(',', $rule_string));
-        }
-        if (!$rule_ids) {
+        // 获取管理员权限规则
+        $ruleIds = self::getAdminRuleIds($admin['roles'] ?? []);
+        
+        if (empty($ruleIds)) {
             $msg = '无权限';
             $code = 2;
             return false;
         }
 
         // 超级管理员
-        if (in_array('*', $rule_ids)){
+        if (in_array('*', $ruleIds, true)) {
             return true;
         }
 
-        // 如果action为index，规则里有任意一个以$controller开头的权限即可
-        if (strtolower($action) === 'index') {
-            $controller_name = class_basename($controller);
-            $rule = Rule::where(function ($query) use ($controller_name, $action) {
-                $query->where('href', 'like', "/admin/$controller_name/%")->whereOr('href', "/admin/$controller_name");
-            })->whereIn('id', $rule_ids)->find();
-            if ($rule) {
-                return true;
+        // 检查具体权限
+        return self::checkPermission($action, $controller, $ruleIds, $code, $msg);
+    }
+
+    /**
+     * 获取控制器属性（带缓存）
+     * @throws ReflectionException
+     */
+    protected static function getControllerProperties(string $controller): array
+    {
+        if (!isset(self::$reflectionCache[$controller])) {
+            self::$reflectionCache[$controller] = new ReflectionClass($controller);
+        }
+        
+        return self::$reflectionCache[$controller]->getDefaultProperties();
+    }
+
+    /**
+     * 获取管理员的权限规则ID列表
+     */
+    protected static function getAdminRuleIds(array $roles): array
+    {
+        if (empty($roles)) {
+            return [];
+        }
+
+        $rules = Role::whereIn('id', $roles)->column('rules');
+        $ruleIds = [];
+        
+        foreach ($rules as $ruleString) {
+            if (empty($ruleString)) {
+                continue;
             }
-            $msg = '无权限';
-            $code = 2;
-            return false;
+            $ruleIds = array_merge($ruleIds, explode(',', $ruleString));
         }
 
-        // 查询是否有当前控制器的规则
-        $controller_name = class_basename($controller);
-        $rule = Rule::where(function ($query) use ($controller_name, $action) {
-            $query->where('href', "/admin/$controller_name/$action")->whereOr('href', "/admin/$controller_name");
-        })->whereIn('id', $rule_ids)->find();
+        return array_unique($ruleIds);
+    }
 
-        if (!$rule) {
-            $msg = '无权限';
-            $code = 2;
-            return false;
+    /**
+     * 检查具体权限
+     */
+    protected static function checkPermission(
+        string $action, 
+        string $controller, 
+        array $ruleIds, 
+        int &$code, 
+        string &$msg
+    ): bool {
+        $controllerName = class_basename($controller);
+        
+        // 获取当前请求路径
+        $path = request()->path();
+        
+        // 判断是系统权限还是插件权限
+        if (str_starts_with($path, '/plugin/')) {
+            // 插件权限检查
+            return self::checkPluginPermission($path, $ruleIds, $code, $msg);
+        }
+        
+        // 系统权限检查
+        return self::checkSystemPermission($action, $controllerName, $ruleIds, $code, $msg);
+    }
+    
+    /**
+     * 检查系统权限
+     */
+    protected static function checkSystemPermission(
+        string $action,
+        string $controllerName,
+        array $ruleIds,
+        int &$code,
+        string &$msg
+    ): bool {
+        // index 方法特殊处理：有该控制器任意权限即可
+        if (strtolower($action) === 'index') {
+            $rule = Rule::whereIn('id', $ruleIds)
+                ->where('type', 'system')
+                ->where(function ($query) use ($controllerName) {
+                    $query->where('href', 'like', "/admin/{$controllerName}/%")
+                          ->whereOr('href', "/admin/{$controllerName}");
+                })
+                ->find();
+        } else {
+            // 其他方法：精确匹配
+            $rule = Rule::whereIn('id', $ruleIds)
+                ->where('type', 'system')
+                ->where(function ($query) use ($controllerName, $action) {
+                    $query->where('href', "/admin/{$controllerName}/{$action}")
+                          ->whereOr('href', "/admin/{$controllerName}");
+                })
+                ->find();
         }
 
-        return true;
+        if ($rule) {
+            return true;
+        }
+
+        $msg = '无权限';
+        $code = 2;
+        return false;
+    }
+    
+    /**
+     * 检查插件权限
+     */
+    protected static function checkPluginPermission(
+        string $path,
+        array $ruleIds,
+        int &$code,
+        string &$msg
+    ): bool {
+        // 从路径提取插件标识 /plugin/{plugin}/{action}
+        $parts = explode('/', trim($path, '/'));
+        $plugin = $parts[1] ?? '';
+        
+        // 查找匹配的插件权限规则
+        $rule = Rule::whereIn('id', $ruleIds)
+            ->where('type', 'plugin')
+            ->where('plugin', $plugin)
+            ->where(function ($query) use ($path) {
+                // 精确匹配或前缀匹配（用于index）
+                $query->where('href', $path)
+                      ->whereOr('href', rtrim($path, '/') . '/index');
+            })
+            ->find();
+        
+        if ($rule) {
+            return true;
+        }
+
+        $msg = '无插件权限';
+        $code = 403;
+        return false;
     }
 }
