@@ -74,11 +74,31 @@ class Base
         $this->controller = $request->controller;
         $this->action = $request->action;
         
+        // 注入 iframe 模式变量
+        View::assign('iframe', !empty($this->get['iframe']) ? 1 : 0);
+        
+        // 注入超级管理员标识
+        $admin = admin();
+        $isSuperAdmin = false;
+        if ($admin && !empty($admin['roles'])) {
+            $roles = \app\admin\model\Role::whereIn('id', $admin['roles'])->column('rules');
+            foreach ($roles as $rules) {
+                if ($rules === '*' || in_array('*', explode(',', $rules))) {
+                    $isSuperAdmin = true;
+                    break;
+                }
+            }
+        }
+        View::assign('isSuperAdmin', $isSuperAdmin);
+        
         // 自动加载对应的模型（排除插件控制器，避免循环）
         $this->loadModel();
         
         // 生成后台菜单
-        $this->generateMenu();
+        // 生成后台菜单（插件控制器跳过，在 view() 里按需生成插件菜单）
+        if (!str_starts_with($this->controller ?? '', 'plugin\\')) {
+            $this->generateMenu();
+        }
     }
     
     /**
@@ -146,7 +166,8 @@ class Base
      */
     protected function getAllRules(array $rule_ids): array
     {
-        $ruleModel = Rule::order('sort asc, id desc');
+        // 只取系统菜单（plugin=''），插件菜单不显示在后台导航
+        $ruleModel = Rule::where('plugin', '')->order('sort asc, id desc');
         
         $all_rules = $ruleModel->select()->toArray();
         
@@ -160,6 +181,24 @@ class Base
         return $all_rules;
     }
     
+    /**
+     * 如果不是超级管理员则返回错误（用于插件敏感操作保护）
+     */
+    protected function checkSuperAdmin(): ?\Webman\Http\Response
+    {
+        $admin = admin();
+        if (!$admin || empty($admin['roles'])) {
+            return error('无权限，仅超级管理员可执行此操作');
+        }
+        $roles = \app\admin\model\Role::whereIn('id', $admin['roles'])->column('rules');
+        foreach ($roles as $rules) {
+            if ($rules === '*' || in_array('*', explode(',', $rules))) {
+                return null; // 是超管，放行
+            }
+        }
+        return error('无权限，仅超级管理员可执行此操作');
+    }
+
     /**
      * 判断是否为 POST 请求
      * @return bool
@@ -181,7 +220,49 @@ class Base
             $template = $this->getAutoTemplate();
         }
         
+        // 注入 base 模板绝对路径，供插件视图使用 {extend name="$base_template"}
+        View::assign('base_template', base_path() . '/app/admin/view/base.html');
+
+        // 若是插件控制器，覆盖 menu_html 为插件自己的菜单
+        if (str_starts_with($this->controller ?? '', 'plugin\\')) {
+            preg_match('/^plugin\\\\([^\\\\]+)/', $this->controller, $m);
+            $identifier = $m[1] ?? '';
+            if ($identifier) {
+                $menuFile = base_path("plugin/{$identifier}/config/menu.php");
+                if (file_exists($menuFile)) {
+                    $menu = (function($f) { return include $f; })($menuFile);
+                    $html = '';
+                    foreach ($menu['menus'] ?? [] as $item) {
+                        $html .= $this->renderPluginMenu($item);
+                    }
+                    View::assign('menu_html', $html);
+                }
+            }
+        }
+        
         return view($template, $vars);
+    }
+
+    /**
+     * 渲染插件菜单项为 HTML
+     */
+    protected function renderPluginMenu(array $item, int $level = 0): string
+    {
+        $title    = htmlspecialchars($item['title'] ?? '');
+        $href     = $item['href'] ?? '';
+        $icon     = $item['icon'] ?? 'mdi mdi-circle-small';
+        $children = $item['children'] ?? [];
+
+        if ($children) {
+            $sub = '';
+            foreach ($children as $child) {
+                $sub .= $this->renderPluginMenu($child, $level + 1);
+            }
+            return "<li class=\"nav-item has-sub\"><a class=\"nav-link\" href=\"javascript:void(0)\"><i class=\"{$icon}\"></i><span>{$title}</span></a><ul class=\"nav-sub\">{$sub}</ul></li>";
+        }
+
+        $active = ($href && str_contains($_SERVER['REQUEST_URI'] ?? '', $href)) ? ' active' : '';
+        return "<li class=\"nav-item{$active}\"><a class=\"nav-link\" href=\"{$href}\"><i class=\"{$icon}\"></i><span>{$title}</span></a></li>";
     }
     
     /**

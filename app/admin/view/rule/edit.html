@@ -12,7 +12,9 @@
                 <select class="form-control form-select" v-model="form.pid" @change="onPidChange">
                     <option value="0">无（顶级菜单）</option>
                     {foreach $menus as $v}
+                    {if empty($pluginId) or $v.plugin == $pluginId}
                     <option value="{$v.id}" data-is-menu="{$v.is_menu}">{$v.title}</option>
+                    {/if}
                     {/foreach}
                 </select>
             </div>

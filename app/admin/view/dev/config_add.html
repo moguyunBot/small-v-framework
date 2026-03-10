@@ -64,6 +64,14 @@
             </div>
             
             <div class="mb-3">
+                <label class="form-label">状态</label>
+                <select class="form-control form-select" v-model="form.status">
+                    <option value="1">启用</option>
+                    <option value="0">停用</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
                 <button type="submit" class="btn btn-primary">
                     <i class="mdi mdi-check"></i> 提交
                 </button>
@@ -88,7 +96,8 @@ createVueApp({
                 config_value: '',
                 config_options: '',
                 config_desc: '',
-                sort: 0
+                sort: 0,
+                status: 1
             }
         };
     }

@@ -14,8 +14,15 @@ class Config extends Base
      */
     public function index()
     {
+        // 支持 plugin 参数：空=系统配置，有值=插件配置
+        $pluginId = $this->get['plugin'] ?? '';
+        
+        // 插件设置仅超级管理员可访问
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
         // 从数据库获取配置
-        $configs = ConfigModel::getConfigsByGroup('');
+        $configs = ConfigModel::getConfigsByGroup($pluginId);
         
         // 如果没有配置数据，显示提示
         if (empty($configs)) {
@@ -102,9 +109,11 @@ class Config extends Base
             
             // 构建跳转 URL，保持当前配置组
             $redirectUrl = 'index';
-            if ($key) {
-                $redirectUrl .= '?key=' . $key;
-            }
+            $params = [];
+            if ($key) $params[] = 'key=' . $key;
+            if ($pluginId) $params[] = 'plugin=' . $pluginId;
+            if (!empty($this->get['iframe'])) $params[] = 'iframe=1';
+            if ($params) $redirectUrl .= '?' . implode('&', $params);
             
             return success('保存成功', $redirectUrl);
         }

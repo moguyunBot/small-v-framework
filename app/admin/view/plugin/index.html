@@ -1,0 +1,293 @@
+{extend name="base"}
+{block name="head"}
+<style>
+.plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+}
+.plugin-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    border: 1px solid #c8d0e0;
+    overflow: hidden;
+    transition: box-shadow .2s, transform .2s;
+    display: flex;
+    flex-direction: column;
+}
+.plugin-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.13); transform: translateY(-2px); }
+.plugin-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #c8d0e0;
+}
+.plugin-icon {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: #fff; flex-shrink: 0;
+}
+.plugin-meta { flex: 1; min-width: 0; }
+.plugin-name { font-size: 15px; font-weight: 700; color: #2d3748; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plugin-version { font-size: 12px; color: #a0aec0; }
+.plugin-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-active   { background: #e6f9f0; color: #22863a; }
+.badge-disabled { background: #fff3cd; color: #856404; }
+.badge-uninstalled { background: #f0f0f0; color: #666; }
+.plugin-card-body { padding: 14px 20px; flex: 1; }
+.plugin-desc { font-size: 13px; color: #718096; line-height: 1.6; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.plugin-info { display: flex; gap: 14px; font-size: 12px; color: #a0aec0; }
+.plugin-card-footer { padding: 12px 20px; background: #fafafa; border-top: 1px solid #c8d0e0; display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+.upload-zone { border: 2px dashed #d0d5dd; border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: #667eea; background: #f5f3ff; }
+.upload-zone i { font-size: 36px; color: #a0aec0; }
+#pluginModal .modal-body { padding: 0; overflow: hidden; }
+#pluginModal iframe { width: 100%; height: 100%; border: none; display: block; }
+</style>
+{/block}
+
+{block name="main"}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="mdi mdi-puzzle me-1"></i> 插件管理</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+          <i class="mdi mdi-upload"></i> 上传插件
+        </button>
+      </div>
+      <div class="card-body">
+        {if empty($plugins)}
+        <div class="text-center text-muted py-5">
+          <i class="mdi mdi-puzzle-outline" style="font-size:48px;opacity:.3"></i>
+          <p class="mt-2">暂未发现任何插件，请先上传插件包</p>
+        </div>
+        {else}
+        <div class="plugin-grid">
+          {foreach $plugins as $p}
+          <div class="plugin-card">
+            <div class="plugin-card-header">
+              <div class="plugin-icon"><i class="{$p.icon}"></i></div>
+              <div class="plugin-meta">
+                <div class="plugin-name">{$p.name}</div>
+                <div class="plugin-version">v{$p.version} &nbsp;·&nbsp; {$p.author}</div>
+              </div>
+              {if $p.installed == 1 && $p.status == 1}
+              <span class="plugin-badge badge-active">已启用</span>
+              {elseif $p.installed == 1 && $p.status == 0}
+              <span class="plugin-badge badge-disabled">已停用</span>
+              {else}
+              <span class="plugin-badge badge-uninstalled">未安装</span>
+              {/if}
+            </div>
+            <div class="plugin-card-body">
+              <p class="plugin-desc">{$p.description|default='暂无描述'}</p>
+              <div class="plugin-info">
+                <span><i class="mdi mdi-identifier"></i> {$p.identifier}</span>
+                <span><i class="mdi mdi-clock-outline"></i> {$p.create_time}</span>
+              </div>
+            </div>
+            <div class="plugin-card-footer">
+              {if $p.installed == 1 && $p.status == 1}
+                <button class="btn btn-sm btn-primary" onclick="openPluginAdmin('{$p.identifier}','{$p.name}','{$p.admin_entry}')"><i class="mdi mdi-open-in-new"></i> 进入管理</button>
+                {if $isSuperAdmin}
+                <button class="btn btn-sm btn-outline-secondary" onclick="openPluginSetting('{$p.identifier}','{$p.name}')"><i class="mdi mdi-cog"></i> 设置</button>
+                {/if}
+                {if $isSuperAdmin}
+                <div class="dropdown d-inline-block">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="mdi mdi-dots-horizontal"></i> 更多</button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" onclick="openMenuManage('{$p.identifier}','{$p.name}')"><i class="mdi mdi-menu me-1"></i> 菜单管理</button></li>
+                    <li><button class="dropdown-item" onclick="openConfigManage('{$p.identifier}','{$p.name}')"><i class="mdi mdi-tune me-1"></i> 配置项管理</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item text-warning" onclick="pluginAction('disable','{$p.identifier}')"><i class="mdi mdi-pause me-1"></i> 停用</button></li>
+                  </ul>
+                </div>
+                {/if}
+              {elseif $p.installed == 1 && $p.status == 0}
+                <button class="btn btn-sm btn-success" onclick="pluginAction('enable','{$p.identifier}')"><i class="mdi mdi-play"></i> 启用</button>
+                {if $isSuperAdmin}
+                <button class="btn btn-sm btn-outline-secondary" onclick="openPluginSetting('{$p.identifier}','{$p.name}')"><i class="mdi mdi-cog"></i> 设置</button>
+                {/if}
+                {if $isSuperAdmin}
+                <div class="dropdown d-inline-block">
+                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="mdi mdi-dots-horizontal"></i> 更多</button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button class="dropdown-item" onclick="openMenuManage('{$p.identifier}','{$p.name}')"><i class="mdi mdi-menu me-1"></i> 菜单管理</button></li>
+                    <li><button class="dropdown-item" onclick="openConfigManage('{$p.identifier}','{$p.name}')"><i class="mdi mdi-tune me-1"></i> 配置项管理</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item text-danger" onclick="pluginAction('uninstall','{$p.identifier}')"><i class="mdi mdi-package-down me-1"></i> 卸载</button></li>
+                  </ul>
+                </div>
+                {/if}
+              {else}
+                <button class="btn btn-sm btn-success" onclick="pluginAction('install','{$p.identifier}')"><i class="mdi mdi-package-down"></i> 安装</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="pluginAction('del','{$p.identifier}')"><i class="mdi mdi-delete"></i> 删除</button>
+              {/if}
+            </div>
+          </div>
+          {/foreach}
+        </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 进入管理 全屏模态框 -->
+<div class="modal fade" id="pluginAdminModal" tabindex="-1">
+  <div class="modal-dialog" style="width:96vw;max-width:96vw;height:94vh;margin:3vh auto">
+    <div class="modal-content" style="height:100%">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="pluginAdminModalTitle"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" style="height:calc(100% - 48px);overflow:hidden">
+        <iframe id="pluginAdminIframe" src="" style="width:100%;height:100%;border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 上传插件 Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="mdi mdi-upload"></i> 上传插件包</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pluginZipInput').click()">
+          <i class="mdi mdi-package-variant"></i>
+          <p class="mt-2 mb-1" style="color:#4a5568;font-weight:600">点击选择或拖拽插件 ZIP 包</p>
+          <p style="color:#a0aec0;font-size:13px">仅支持 .zip 格式，包内必须包含 config/app.php</p>
+          <div id="uploadFileName" style="margin-top:8px;color:#667eea;font-size:13px"></div>
+        </div>
+        <input type="file" id="pluginZipInput" accept=".zip" style="display:none" onchange="onZipSelected(this)">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="uploadBtn" onclick="doUpload()" disabled>
+          <i class="mdi mdi-upload"></i> 上传安装
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 配置项管理 / 设置 大模态框 -->
+<div class="modal fade" id="pluginModal" tabindex="-1">
+  <div class="modal-dialog modal-xl" style="height:90vh;margin-top:5vh;margin-bottom:5vh">
+    <div class="modal-content" style="height:100%">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="pluginModalTitle"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" style="height:calc(100% - 48px);overflow:hidden">
+        <iframe id="pluginModalIframe" src="" style="width:100%;height:100%;border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+const _app = createVueApp({
+    data() {
+        return { uploadFile: null };
+    },
+    mounted() {
+        document.getElementById('pluginModal').addEventListener('hidden.bs.modal', () => {
+            document.getElementById('pluginModalIframe').src = '';
+        });
+        document.getElementById('pluginAdminModal').addEventListener('hidden.bs.modal', () => {
+            document.getElementById('pluginAdminIframe').src = '';
+        });
+        const zone = document.getElementById('uploadZone');
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault(); zone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) this.setUploadFile(file);
+        });
+    },
+    methods: {
+        openPluginAdmin(identifier, name, entry) {
+          console.log(entry);
+            document.getElementById('pluginAdminModalTitle').textContent = name + ' · 管理后台';
+            // entry 优先，否则降级到 /plugin/{id}/admin/index
+            const url = entry || ('/app/' + identifier + '/admin/index');
+            document.getElementById('pluginAdminIframe').src = url;
+            new bootstrap.Modal(document.getElementById('pluginAdminModal')).show();
+        },
+        openMenuManage(identifier, name) {
+            document.getElementById('pluginModalTitle').textContent = name + ' · 菜单管理';
+            document.getElementById('pluginModalIframe').src = '/admin/rule/index?plugin=' + identifier + '&iframe=1';
+            new bootstrap.Modal(document.getElementById('pluginModal')).show();
+        },
+        openConfigManage(identifier, name) {
+            document.getElementById('pluginModalTitle').textContent = name + ' · 配置项管理';
+            document.getElementById('pluginModalIframe').src = '/admin/dev/configManage?group=' + identifier + '&plugin=' + identifier + '&iframe=1';
+            new bootstrap.Modal(document.getElementById('pluginModal')).show();
+        },
+        openPluginSetting(identifier, name) {
+            document.getElementById('pluginModalTitle').textContent = name + ' · 插件设置';
+            document.getElementById('pluginModalIframe').src = '/admin/config/index?plugin=' + identifier + '&iframe=1';
+            new bootstrap.Modal(document.getElementById('pluginModal')).show();
+        },
+        pluginAction(action, identifier) {
+            const msgs = {
+                install:   '确定要安装该插件吗？',
+                uninstall: '确定要卸载吗？数据将保留，可重新安装恢复。',
+                enable:    '确定要启用该插件吗？',
+                disable:   '确定要停用该插件吗？后台菜单将立即隐藏。',
+                del:       '确定要删除该插件吗？插件文件和全部数据将被永久删除，不可撤销！',
+            };
+            this.confirm(msgs[action], () => {
+                this.post('/admin/plugin/' + action, { identifier }, res => {
+                    this.alert(res, () => { if (res.code == 1) location.reload(); });
+                });
+            });
+        },
+        onZipSelected(input) {
+            const file = input.files[0];
+            if (file) this.setUploadFile(file);
+        },
+        setUploadFile(file) {
+            this.uploadFile = file;
+            document.getElementById('uploadFileName').textContent = '已选择：' + file.name;
+            document.getElementById('uploadBtn').disabled = false;
+        },
+        doUpload() {
+            if (!this.uploadFile) return;
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> 上传中...';
+            const fd = new FormData();
+            fd.append('plugin_zip', this.uploadFile);
+            this.ajax('/admin/plugin/upload', fd, res => {
+                bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                this.alert(res, () => { if (res.code == 1) location.reload(); });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="mdi mdi-upload"></i> 上传安装';
+            });
+        }
+    }
+});
+// 挂载并暴露方法供模板 onclick 调用
+const _vm = _app.mount('#app');
+window.openPluginAdmin = (id, name, entry) => _vm.openPluginAdmin(id, name, entry);
+window.openMenuManage = (id, name) => _vm.openMenuManage(id, name);
+window.openConfigManage = (id, name) => _vm.openConfigManage(id, name);
+window.openPluginSetting = (id, name) => _vm.openPluginSetting(id, name);
+window.pluginAction = (action, id) => _vm.pluginAction(action, id);
+window.onZipSelected = (input) => _vm.onZipSelected(input);
+window.doUpload = () => _vm.doUpload();
+</script>
+{/block}

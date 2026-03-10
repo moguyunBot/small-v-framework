@@ -38,11 +38,13 @@ class Config extends \think\Model
     
     /**
      * 获取配置（按组分组）
+     * @param string $plugin 插件标识，空=系统配置，有值=插件配置
      * @return array
      */
-    public static function getConfigsByGroup(): array
+    public static function getConfigsByGroup(string $plugin = ''): array
     {
-        $configs = self::order('sort', 'asc')
+        $configs = self::where('plugin', $plugin)
+            ->order('sort', 'asc')
             ->select()
             ->toArray();
         

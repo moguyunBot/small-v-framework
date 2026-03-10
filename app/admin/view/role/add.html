@@ -2,27 +2,11 @@
 {block name="head"}
 <link rel="stylesheet" href="/static/jstree/themes/default/style.css">
 <style>
-.plugin-card {
-    border: 1px solid #e3e6f0;
-    border-radius: 0.35rem;
-    margin-bottom: 1rem;
-}
-.plugin-card .card-header {
-    background-color: #f8f9fc;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e3e6f0;
-}
-.plugin-card .card-body {
-    padding: 1rem;
-}
-.permission-tree {
-    min-height: 200px;
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 4px;
-}
+.permission-tree { min-height: 120px; max-height: 380px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; }
+.plugin-perm-card { border: 1px solid #e3e6f0; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
+.plugin-perm-header { background: #f8f9fc; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e3e6f0; }
+.plugin-perm-header .plugin-title { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.plugin-perm-body { padding: 10px; }
 </style>
 {/block}
 
@@ -30,16 +14,14 @@
 <div class="row">
     <div class="col-lg-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">添加角色</h5>
-            </div>
+            <div class="card-header"><h5 class="mb-0">添加角色</h5></div>
             <div class="card-body">
                 <form @submit.prevent="submit1">
                     <div class="mb-3">
                         <label class="form-label">角色名称</label>
                         <input type="text" class="form-control" required v-model="form.name">
                     </div>
-                    
+
                     <!-- 系统权限 -->
                     <div class="mb-4">
                         <label class="form-label d-flex justify-content-between align-items-center">
@@ -51,29 +33,27 @@
                         </label>
                         <div ref="systemTree" class="permission-tree"></div>
                     </div>
-                    
+
                     <!-- 插件权限 -->
-                    <div class="mb-4" v-if="hasPluginRules">
-                        <label class="form-label">
-                            <i class="mdi mdi-puzzle"></i> 插件权限
-                        </label>
-                        <div class="row">
-                            {foreach $pluginRules as $plugin => $group}
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="plugin-card">
-                                    <div class="card-header d-flex align-items-center">
-                                        <i class="{$group.icon} me-2"></i>
-                                        <span>{$group.name}</span>
-                                    </div>
-                                    <div class="card-body">
-                                        <div ref="pluginTree_{$plugin}" class="permission-tree" style="min-height: 150px; max-height: 250px;"></div>
-                                    </div>
+                    <div v-if="pluginRuleKeys.length > 0" class="mb-4">
+                        <label class="form-label"><i class="mdi mdi-puzzle"></i> 插件权限</label>
+                        <div v-for="key in pluginRuleKeys" :key="key" class="plugin-perm-card">
+                            <div class="plugin-perm-header">
+                                <span class="plugin-title">
+                                    <i :class="pluginRules[key].icon"></i>
+                                    {{ pluginRules[key].name }}
+                                </span>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" :id="'checkAll_'+key" @change="e => toggleAllPlugin(e, key)">
+                                    <label class="form-check-label" :for="'checkAll_'+key">全选</label>
                                 </div>
                             </div>
-                            {/foreach}
+                            <div class="plugin-perm-body">
+                                <div :ref="'pluginTree_'+key" class="permission-tree"></div>
+                            </div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">状态</label>
                         <select class="form-control form-select" v-model="form.status">
@@ -81,7 +61,6 @@
                             <option value="0">禁用</option>
                         </select>
                     </div>
-                    
                     <div class="d-flex justify-content-between">
                         <a href="/admin/role/index" class="btn btn-secondary">返回</a>
                         <button type="submit" class="btn btn-primary">保存</button>
@@ -96,103 +75,68 @@
 {block name="script"}
 <script src="/static/jstree/jstree.js"></script>
 <script>
-    createVueApp({
-        data() {
-            return {
-                form: {
-                    name: '',
-                    rules: [],
-                    status: 1
-                },
-                systemRules: JSON.parse('{:json_encode($systemRules)}'),
-                pluginRules: JSON.parse('{:json_encode($pluginRules)}'),
-                systemTree: null,
-                pluginTrees: {}
-            };
+createVueApp({
+    data() {
+        return {
+            form: { name: '', rules: [], status: 1 },
+            systemRules: JSON.parse('{:json_encode($systemRules)}'),
+            pluginRules:  JSON.parse('{:json_encode($pluginRules)}'),
+            systemTree: null,
+            pluginTrees: {}
+        };
+    },
+    computed: {
+        pluginRuleKeys() { return Object.keys(this.pluginRules); }
+    },
+    mounted() {
+        this.initSystemTree();
+        this.$nextTick(() => this.initPluginTrees());
+    },
+    methods: {
+        initSystemTree() {
+            this.systemTree = $(this.$refs.systemTree).jstree({
+                core: { data: this.systemRules, themes: { icons: false } },
+                plugins: ['checkbox'],
+                checkbox: { three_state: true, cascade: 'up+down' }
+            });
         },
-        computed: {
-            hasPluginRules() {
-                return Object.keys(this.pluginRules).length > 0;
-            }
-        },
-        mounted() {
-            // 初始化系统权限树
-            this.initSystemTree();
-            
-            // 初始化插件权限树
-            this.initPluginTrees();
-        },
-        methods: {
-            initSystemTree() {
-                this.systemTree = $(this.$refs.systemTree).jstree({
-                    core: {
-                        data: this.systemRules,
-                        themes: {
-                            icons: false
-                        }
-                    },
+        initPluginTrees() {
+            this.pluginRuleKeys.forEach(key => {
+                const ref = this.$refs['pluginTree_' + key];
+                const el = Array.isArray(ref) ? ref[0] : ref;
+                if (!el) return;
+                // 将插件规则转为 jstree 格式（扁平列表）
+                const data = this.pluginRules[key].rules.map(r => ({
+                    id: String(r.id), parent: r.pid ? String(r.pid) : '#',
+                    text: r.title, state: r.state
+                }));
+                this.pluginTrees[key] = $(el).jstree({
+                    core: { data, themes: { icons: false } },
                     plugins: ['checkbox'],
-                    checkbox: {
-                        three_state: true,
-                        cascade: 'up+down'
-                    }
+                    checkbox: { three_state: true, cascade: 'up+down' }
                 });
-            },
-            initPluginTrees() {
-                for (let plugin in this.pluginRules) {
-                    let rules = this.pluginRules[plugin].rules;
-                    // 转换为 jstree 格式
-                    let treeData = rules.map(r => ({
-                        id: r.id,
-                        parent: r.pid ? r.pid : '#',
-                        text: r.title,
-                        state: { selected: false }
-                    }));
-                    
-                    let tree = $(this.$refs['pluginTree_' + plugin]).jstree({
-                        core: {
-                            data: treeData,
-                            themes: {
-                                icons: false
-                            }
-                        },
-                        plugins: ['checkbox'],
-                        checkbox: {
-                            three_state: true,
-                            cascade: 'up+down'
-                        }
-                    });
-                    
-                    this.pluginTrees[plugin] = tree;
-                }
-            },
-            toggleAllSystem(e) {
-                if (e.target.checked) {
-                    this.systemTree.jstree('check_all');
-                } else {
-                    this.systemTree.jstree('uncheck_all');
-                }
-            },
-            submit1(e) {
-                // 收集系统权限
-                let systemChecked = this.systemTree.jstree('get_checked');
-                let systemUndetermined = this.systemTree.jstree('get_undetermined');
-                let allRules = systemChecked.concat(systemUndetermined);
-                
-                // 收集插件权限
-                for (let plugin in this.pluginTrees) {
-                    let tree = this.pluginTrees[plugin];
-                    let checked = tree.jstree('get_checked');
-                    let undetermined = tree.jstree('get_undetermined');
-                    allRules = allRules.concat(checked, undetermined);
-                }
-                
-                // 去重
-                this.form.rules = [...new Set(allRules)];
-                
-                this.submit(e);
-            }
+            });
+        },
+        toggleAllSystem(e) {
+            e.target.checked ? this.systemTree.jstree('check_all') : this.systemTree.jstree('uncheck_all');
+        },
+        toggleAllPlugin(e, key) {
+            const tree = this.pluginTrees[key];
+            if (!tree) return;
+            e.target.checked ? tree.jstree('check_all') : tree.jstree('uncheck_all');
+        },
+        submit1(e) {
+            let allRules = [
+                ...this.systemTree.jstree('get_checked'),
+                ...this.systemTree.jstree('get_undetermined')
+            ];
+            Object.values(this.pluginTrees).forEach(tree => {
+                allRules = allRules.concat(tree.jstree('get_checked'), tree.jstree('get_undetermined'));
+            });
+            this.form.rules = [...new Set(allRules)];
+            this.submit(e);
         }
-    }).mount('#app');
+    }
+}).mount('#app');
 </script>
 {/block}

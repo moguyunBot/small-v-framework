@@ -8,7 +8,7 @@
       <div class="card-body">
         <div class="card-btns mb-2-5 d-flex justify-content-between">
           <div>
-            <a class="btn btn-sm btn-primary me-1" href="add"><i class="mdi mdi-plus"></i> 新增</a>
+            <a class="btn btn-sm btn-primary me-1" href="add{$pluginId ? '?plugin='.$pluginId.($iframe ? '&iframe=1' : '') : ($iframe ? '?iframe=1' : '')}"><i class="mdi mdi-plus"></i> 新增</a>
           </div>
         </div>
         <div class="table-responsive">
@@ -35,8 +35,8 @@
                 <td>{$v.status?'<font class="text-success">启用</font>':'<font class="text-danger">停用</font>'}</td>
                 <td>
                   <div class="btn-group btn-group-sm">
-                    <a class="btn btn-default" href="add?pid={$v.id}"><i class="mdi mdi-plus-circle-outline"></i> 添加子菜单</a>
-                    <a class="btn btn-default" href="edit?id={$v.id}">修改</a>
+                    <a class="btn btn-default" href="add?pid={$v.id}{$pluginId ? '&plugin='.$pluginId : ''}{$iframe ? '&iframe=1' : ''}"><i class="mdi mdi-plus-circle-outline"></i> 添加子菜单</a>
+                    <a class="btn btn-default" href="edit?id={$v.id}{$iframe ? '&iframe=1' : ''}">修改</a>
                     <button class="btn btn-default" onclick="del({$v.id})">删除</button>
                   </div>
                 </td>

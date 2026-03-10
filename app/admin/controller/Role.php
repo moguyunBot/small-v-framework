@@ -41,7 +41,7 @@ class Role extends Base{
         // 获取系统权限（树形结构）
         $systemRules = $this->getTreeRules('system', []);
         
-        // 获取插件权限（按插件分组）
+        // 获取插件权限（按插件分组，只返回已安装且启用的）
         $pluginRules = $this->getPluginRules([]);
         
         return $this->view('',[
@@ -78,7 +78,7 @@ class Role extends Base{
         // 获取系统权限（树形结构）
         $systemRules = $this->getTreeRules('system', $checkedRules);
         
-        // 获取插件权限（按插件分组）
+        // 获取插件权限（按插件分组，只返回已安装且启用的）
         $pluginRules = $this->getPluginRules($checkedRules);
         
         return $this->view('',[
@@ -89,7 +89,7 @@ class Role extends Base{
     }
     
     /**
-     * 获取树形权限列表
+     * 获取树形权限列表（jstree 格式）
      */
     protected function getTreeRules(string $type, array $checkedRules): array
     {
@@ -105,35 +105,43 @@ class Role extends Base{
                 return $v;
             })->toArray();
     }
-    
+
     /**
-     * 获取插件权限（按插件分组）
+     * 获取插件权限（按插件分组，只返回已安装且已启用的插件）
      */
     protected function getPluginRules(array $checkedRules): array
     {
-        $rules = Rule::where(['status' => 1, 'type' => 'plugin'])
+        // 只取已安装且已启用的插件标识
+        $activePlugins = \app\admin\model\Plugin::where('status', 1)
+            ->where('installed', 1)
+            ->column('identifier');
+
+        if (empty($activePlugins)) {
+            return [];
+        }
+
+        $rules = Rule::where('status', 1)
+            ->where('type', 'plugin')
+            ->whereIn('plugin', $activePlugins)
             ->order('plugin asc, sort asc, id asc')
             ->select();
-        
+
         $grouped = [];
         foreach ($rules as $rule) {
             $plugin = $rule['plugin'] ?? 'other';
             if (!isset($grouped[$plugin])) {
-                // 获取插件信息
                 $pluginInfo = \app\admin\model\Plugin::where('identifier', $plugin)->find();
                 $grouped[$plugin] = [
-                    'name'   => $pluginInfo['name'] ?? $plugin,
-                    'icon'   => $pluginInfo['icon'] ?? 'mdi mdi-puzzle',
-                    'rules'  => [],
+                    'name'  => $pluginInfo['name'] ?? $plugin,
+                    'icon'  => $pluginInfo['icon'] ?? 'mdi mdi-puzzle',
+                    'rules' => [],
                 ];
             }
-            
-            $rule['state'] = [
-                'selected' => in_array($rule['id'], $checkedRules)
-            ];
-            $grouped[$plugin]['rules'][] = $rule->toArray();
+            $ruleArr = $rule->toArray();
+            $ruleArr['state'] = ['selected' => in_array($rule['id'], $checkedRules)];
+            $grouped[$plugin]['rules'][] = $ruleArr;
         }
-        
+
         return $grouped;
     }
     

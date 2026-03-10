@@ -106,7 +106,8 @@ ul.pagination li:last-child span {
 </style>
 </head>
 
-<body>
+<body{if $iframe} class="iframe-mode"{/if}>
+{if !$iframe}
 <div class="lyear-layout-web">
   <div class="lyear-layout-container">
     <!--左侧导航-->
@@ -426,6 +427,11 @@ ul.pagination li:last-child span {
     <!--End 页面主要内容-->
   </div>
 </div>
+{else}
+<div class="container-fluid p-3" id="app">
+  {block name="main"}{/block}
+</div>
+{/if}
 
 <script type="text/javascript" src="/static/js/jquery.min.js"></script>
 <script type="text/javascript" src="/static/js/popper.min.js"></script>

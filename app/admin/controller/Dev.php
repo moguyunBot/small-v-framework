@@ -1565,8 +1565,12 @@ class Dev extends Base
      */
     public function configManage()
     {
-        // 从 URL 获取分组
+        // 从 URL 获取分组和插件标识
         $groupKey = $this->get['group'] ?? '';
+        $pluginId = $this->get['plugin'] ?? '';
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
         
         if ($this->isPost()) {
             $page = $this->post['page'] ?? 1;
@@ -1580,6 +1584,11 @@ class Dev extends Base
             
             if (!empty($this->post['config_key'])) {
                 $where[] = ['config_key', 'like', '%' . $this->post['config_key'] . '%'];
+            }
+            
+            // 按插件过滤
+            if ($pluginId !== '') {
+                $where[] = ['plugin', '=', $pluginId];
             }
             
             $list = ConfigModel::where($where)
@@ -1606,6 +1615,9 @@ class Dev extends Base
         }
         
         $where[] = ['group_key', '=', $groupKey];
+        if ($pluginId !== '') {
+            $where[] = ['plugin', '=', $pluginId];
+        }
         
         $list = ConfigModel::where($where)
             ->order('sort asc, id desc')
@@ -1620,8 +1632,9 @@ class Dev extends Base
         
         return $this->view('dev/config_manage', [
             'groupKey' => $groupKey,
-            'group' => $group,
-            'list' => $list
+            'pluginId' => $pluginId,
+            'group'    => $group,
+            'list'     => $list
         ]);
     }
     
@@ -1631,8 +1644,12 @@ class Dev extends Base
      */
     public function configAdd()
     {
-        // 从 URL 获取分组
+        // 从 URL 获取分组和插件标识
         $groupKey = $this->get['group'] ?? '';
+        $pluginId = $this->get['plugin'] ?? '';
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
         
         if (empty($groupKey)) {
             return error('请先选择配置分组');
@@ -1661,8 +1678,9 @@ class Dev extends Base
                 $data = $this->post;
                 
                 // 设置分组
-                $data['group_key'] = $groupKey;
+                $data['group_key']   = $groupKey;
                 $data['group_title'] = $group['group_title'];
+                $data['plugin']      = $pluginId;
                 
                 // 处理配置选项
                 if (!empty($data['config_options'])) {
@@ -1681,11 +1699,15 @@ class Dev extends Base
                 return error($e->getMessage() ?: '添加失败');
             }
             
-            return success('添加成功', 'configManage?group=' . $groupKey);
+            $back = 'configManage?group=' . $groupKey;
+            if ($pluginId) $back .= '&plugin=' . $pluginId;
+            if (!empty($this->get['iframe'])) $back .= '&iframe=1';
+            return success('添加成功', $back);
         }
         
         return $this->view('dev/config_add', [
-            'group' => $group
+            'group'    => $group,
+            'pluginId' => $pluginId,
         ]);
     }
     
@@ -1695,14 +1717,15 @@ class Dev extends Base
      */
     public function configEdit()
     {
-        $id = $this->get['id'] ?? 0;
-        $config = ConfigModel::find($id);
+        $id       = $this->get['id'] ?? 0;
+        $config   = ConfigModel::find($id);
         
         if (!$config) {
             return error('配置项不存在');
         }
         
         $groupKey = $config['group_key'];
+        $pluginId = $config['plugin'] ?? '';
         
         if ($this->isPost()) {
             try {
@@ -1721,8 +1744,9 @@ class Dev extends Base
                 
                 $data = $this->post;
                 
-                // 保持原分组
+                // 保持原分组和插件标识不变
                 $data['group_key'] = $groupKey;
+                $data['plugin']    = $pluginId;
                 
                 // 处理配置选项
                 if (!empty($data['config_options'])) {
@@ -1741,7 +1765,10 @@ class Dev extends Base
                 return error($e->getMessage() ?: '编辑失败');
             }
             
-            return success('编辑成功', 'configManage?group=' . $groupKey);
+            $back = 'configManage?group=' . $groupKey;
+            if ($pluginId) $back .= '&plugin=' . $pluginId;
+            if (!empty($this->get['iframe'])) $back .= '&iframe=1';
+            return success('编辑成功', $back);
         }
         
         // 获取分组信息
@@ -1755,8 +1782,9 @@ class Dev extends Base
         }
         
         return $this->view('dev/config_edit', [
-            'config' => $config,
-            'group' => $group
+            'config'   => $config,
+            'group'    => $group,
+            'pluginId' => $pluginId,
         ]);
     }
     

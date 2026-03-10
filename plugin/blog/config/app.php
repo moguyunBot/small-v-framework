@@ -1,0 +1,63 @@
+<?php
+return [
+    'debug'              => true,
+    'controller_suffix'  => '',
+    'controller_reuse'   => false,
+    'enable'             => true,
+    'identifier'         => 'blog',
+    'name'               => '博客系统',
+    'version'            => '1.0.0',
+    'author'             => 'System',
+    'description'        => '功能完整的博客系统，包含文章、分类、标签、评论管理',
+    'icon'               => 'mdi mdi-post',
+    'settings' => [
+        [
+            'group_key'   => 'blog',
+            'group_title' => '博客设置',
+            'configs' => [
+                [
+                    'config_key'   => 'blog_title',
+                    'config_title' => '博客名称',
+                    'config_type'  => 'text',
+                    'config_value' => '我的博客',
+                    'config_desc'  => '显示在博客首页的标题',
+                    'sort'         => 1,
+                ],
+                [
+                    'config_key'   => 'blog_subtitle',
+                    'config_title' => '博客副标题',
+                    'config_type'  => 'text',
+                    'config_value' => '记录生活，分享技术',
+                    'config_desc'  => '显示在博客首页标题下方',
+                    'sort'         => 2,
+                ],
+                [
+                    'config_key'   => 'posts_per_page',
+                    'config_title' => '每页文章数',
+                    'config_type'  => 'number',
+                    'config_value' => '10',
+                    'config_desc'  => '列表页每页显示的文章数量',
+                    'sort'         => 3,
+                ],
+                [
+                    'config_key'     => 'comment_enable',
+                    'config_title'   => '开启评论',
+                    'config_type'    => 'radio',
+                    'config_value'   => '1',
+                    'config_options' => [['key'=>'1','name'=>'开启'],['key'=>'0','name'=>'关闭']],
+                    'config_desc'    => '是否允许访客评论',
+                    'sort'           => 4,
+                ],
+                [
+                    'config_key'     => 'comment_audit',
+                    'config_title'   => '评论审核',
+                    'config_type'    => 'radio',
+                    'config_value'   => '1',
+                    'config_options' => [['key'=>'1','name'=>'需要审核'],['key'=>'0','name'=>'直接发布']],
+                    'config_desc'    => '评论是否需要管理员审核',
+                    'sort'           => 5,
+                ],
+            ],
+        ],
+    ],
+];

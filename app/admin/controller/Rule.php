@@ -10,9 +10,17 @@ class Rule extends Base{
      * @return \Webman\Http\Response
      */
     public function index(){
-        $rules = $this->model->order('sort asc,id desc')->select();
+        // 支持 plugin 参数：空=系统菜单，有值=插件菜单
+        $pluginId = $this->get['plugin'] ?? '';
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+            $rules = $this->model->where('plugin', $pluginId)->order('sort asc,id desc')->select();
+        } else {
+            // 只显示系统菜单（plugin=''），插件菜单由插件管理模块统一管理
+            $rules = $this->model->where('plugin', '')->order('sort asc,id desc')->select();
+        }
         $menus = $this->recursion_title($rules);
-        return $this->view('',['menus'=>$menus]);
+        return $this->view('',['menus'=>$menus, 'pluginId'=>$pluginId]);
     }
     
     /**
@@ -40,6 +48,12 @@ class Rule extends Base{
      * @return \Webman\Http\Response
      */
     public function add(){
+        // 支持 plugin 参数
+        $pluginId = $this->get['plugin'] ?? '';
+        $iframe   = !empty($this->get['iframe']) ? 1 : 0;
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
         if($this->isPost()){
             try{
                 validate([
@@ -47,25 +61,35 @@ class Rule extends Base{
                     'pid'           =>  'require',
                     'sort'          =>  'require',
                 ])->check($this->post);
+                $this->post['plugin'] = $pluginId;
                 $this->model::create($this->post);
             }catch(\Exception $e){
                 return error($e->getMessage()?:'添加失败');
             }
-            return success('添加成功', 'index');
+            $back = 'index';
+            $params = [];
+            if ($pluginId) $params[] = 'plugin=' . $pluginId;
+            if ($iframe)   $params[] = 'iframe=1';
+            if ($params)   $back .= '?' . implode('&', $params);
+            return success('添加成功', $back);
         }
         
-        $rules = $this->model->order('sort asc,id desc')->select();
+        // 上级菜单只取同插件的菜单
+        if ($pluginId !== '') {
+            $rules = $this->model->where('plugin', $pluginId)->order('sort asc,id desc')->select();
+        } else {
+            $rules = $this->model->where('plugin', '')->order('sort asc,id desc')->select();
+        }
         $menus = $this->recursion_title($rules);
         
-        // 获取预选的父级ID
         $pid = $this->get['pid'] ?? 0;
-        // 获取父级规则信息（用于判断父级是否隐藏）
         $parentRule = $pid > 0 ? $this->model->find($pid) : null;
         
         return $this->view('', [
-            'menus' => $menus,
-            'pid' => $pid,
-            'parentRule' => $parentRule
+            'menus'      => $menus,
+            'pid'        => $pid,
+            'parentRule' => $parentRule,
+            'pluginId'   => $pluginId,
         ]);
     }
     
@@ -74,7 +98,12 @@ class Rule extends Base{
      * @return \Webman\Http\Response
      */
     public function edit(){
-        $rule = $this->model->find($this->get['id']);
+        $rule     = $this->model->find($this->get['id']);
+        $pluginId = $rule['plugin'] ?? '';
+        $iframe   = !empty($this->get['iframe']) ? 1 : 0;
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
         if($this->isPost()){
             try{
                 validate([
@@ -82,22 +111,33 @@ class Rule extends Base{
                     'pid'           =>  'require',
                     'sort'          =>  'require',
                 ])->check($this->post);
+                $this->post['plugin'] = $pluginId;
                 $rule->replace()->save($this->post);
             }catch(\Exception $e){
                 return error($e->getMessage()?:'修改失败');
             }
-            return success('修改成功', 'index');
+            $back = 'index';
+            $params = [];
+            if ($pluginId) $params[] = 'plugin=' . $pluginId;
+            if ($iframe)   $params[] = 'iframe=1';
+            if ($params)   $back .= '?' . implode('&', $params);
+            return success('修改成功', $back);
         }
-        $rules = $this->model->order('sort asc,id desc')->select();
+        // 上级菜单只取同插件的菜单
+        if ($pluginId !== '') {
+            $rules = $this->model->where('plugin', $pluginId)->order('sort asc,id desc')->select();
+        } else {
+            $rules = $this->model->where('plugin', '')->order('sort asc,id desc')->select();
+        }
         $menus = $this->recursion_title($rules);
         
-        // 获取父级规则信息（用于判断父级是否隐藏）
         $parentRule = $rule['pid'] > 0 ? $this->model->find($rule['pid']) : null;
         
         return $this->view('', [
-            'rule' => $rule, 
-            'menus' => $menus,
-            'parentRule' => $parentRule
+            'rule'       => $rule, 
+            'menus'      => $menus,
+            'parentRule' => $parentRule,
+            'pluginId'   => $pluginId,
         ]);
     }
     

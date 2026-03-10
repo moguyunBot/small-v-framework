@@ -1,0 +1,15 @@
+{extend name="layout"}
+{block name="content"}
+{volist name="posts" id="p"}
+<div class="post-card">
+  <h2><a href="/blog/post/{$p.slug}">{$p.title}</a></h2>
+  <div class="post-meta">
+    {$p.create_time} &bull; {$p.category.name|default='未分类'} &bull; 阅读 {$p.view_count}
+  </div>
+  <div class="post-summary">{$p.summary|default=''}</div>
+  <a href="/blog/post/{$p.slug}" class="read-more">阅读全文 &rarr;</a>
+</div>
+{/volist}
+{if $posts->isEmpty()}<p style="color:#aaa">暂无文章</p>{/if}
+{$posts|raw}
+{/block}
