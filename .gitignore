@@ -36,3 +36,4 @@ composer.lock
 # 其他
 .git/
 *.tar.gz
+*.tar.gz
