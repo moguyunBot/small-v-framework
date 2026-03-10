@@ -56,7 +56,17 @@ class Rule extends Base{
         
         $rules = $this->model->order('sort asc,id desc')->select();
         $menus = $this->recursion_title($rules);
-        return $this->view('',['menus'=>$menus]);
+        
+        // 获取预选的父级ID
+        $pid = $this->get['pid'] ?? 0;
+        // 获取父级规则信息（用于判断父级是否隐藏）
+        $parentRule = $pid > 0 ? $this->model->find($pid) : null;
+        
+        return $this->view('', [
+            'menus' => $menus,
+            'pid' => $pid,
+            'parentRule' => $parentRule
+        ]);
     }
     
     /**
@@ -80,7 +90,15 @@ class Rule extends Base{
         }
         $rules = $this->model->order('sort asc,id desc')->select();
         $menus = $this->recursion_title($rules);
-        return $this->view('',['rule'=>$rule,'menus'=>$menus]);
+        
+        // 获取父级规则信息（用于判断父级是否隐藏）
+        $parentRule = $rule['pid'] > 0 ? $this->model->find($rule['pid']) : null;
+        
+        return $this->view('', [
+            'rule' => $rule, 
+            'menus' => $menus,
+            'parentRule' => $parentRule
+        ]);
     }
     
     /**

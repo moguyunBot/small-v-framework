@@ -101,6 +101,16 @@ class Index
                 'url' => '/app/utiltools/index',
                 'status' => 'active'
             ],
+            [
+                'id' => 8,
+                'name' => '区块链靓号生成器',
+                'icon' => 'mdi-bitcoin',
+                'color' => 'linear-gradient(135deg, #f7931a 0%, #9945ff 100%)',
+                'description' => '支持 BTC/ETH/TRON/LTC/DOGE/SOL/XRP/XLM/ADA/DOT/ATOM/APT 等12条主流区块链靓号生成，完全本地运行',
+                'category' => '区块链工具',
+                'url' => '/app/vanity/index',
+                'status' => 'active'
+            ],
         ];
     }
 }

@@ -1,7 +1,4 @@
 {extend name="base"}
-{block name="head"}
-<link rel="stylesheet" type="text/css" href="/static/js/bootstrap-select/bootstrap-select.min.css">
-{/block}
 {block name="main"}
 <div class="card">
     <div class="card-body">
@@ -12,37 +9,45 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">上级菜单</label>
-                <select class="form-control selectpicker" v-model="form.pid">
-                    <option value="0">无</option>
+                <select class="form-control form-select" v-model="form.pid" @change="onPidChange">
+                    <option value="0">无（顶级菜单）</option>
                     {foreach $menus as $v}
-                    <option value="{$v.id}">{$v.title}</option>
+                    <option value="{$v.id}" data-is-menu="{$v.is_menu}">{$v.title}</option>
                     {/foreach}
                 </select>
             </div>
+            
+            <!-- ICON 字段：只有顶级菜单才需要 -->
             <div class="mb-3">
                 <label class="form-label">ICON</label>
-                <input type="text" class="form-control" v-model="form.icon">
+                <input type="text" class="form-control" v-model="form.icon" :disabled="form.pid != 0" placeholder="顶级菜单才需要填写，如：mdi mdi-home">
             </div>
+            
+            <!-- href 字段：子菜单才需要 -->
             <div class="mb-3">
                 <label class="form-label">href</label>
-                <input type="text" class="form-control" v-model="form.href">
+                <input type="text" class="form-control" v-model="form.href" :disabled="form.pid == 0" placeholder="子菜单才需要填写，如：/admin/user/index">
             </div>
+            
             <div class="mb-3">
                 <label class="form-label">排序</label>
                 <input type="number" class="form-control" v-model="form.sort">
             </div>
+            
+            <!-- 菜单显示/隐藏：如果父级是隐藏的，子级必须是隐藏 -->
             <div class="mb-3">
                 <label class="form-label">菜单</label>
-                <select class="form-control selectpicker" v-model="form.is_menu">
+                <select class="form-control form-select" v-model="form.is_menu" :disabled="parentIsHidden">
                     <option value=1>显示</option>
                     <option value=0>隐藏</option>
                 </select>
             </div>
+            
             <div class="mb-3">
                 <label class="form-label">状态</label>
-                <select class="form-control selectpicker" v-model="form.status">
+                <select class="form-control form-select" v-model="form.status">
                     <option value=1>启用</option>
-                    <option value=0>隐藏</option>
+                    <option value=0>禁用</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">提交</button>
@@ -51,21 +56,43 @@
 </div>
 {/block}
 {block name="script"}
-<script type="text/javascript" src="/static/js/bootstrap-select/bootstrap-select.min.js"></script>
 <script>
     createVueApp({
         data() {
             return {
                 form: {
                     title: '',
-                    pid: 0,
+                    pid: {$pid|default=0},
                     icon: '',
                     href: '',
                     sort: 0,
-                    is_menu: 1,
-                    status:1
-                }
+                    is_menu: {$parentRule && $parentRule.is_menu == 0 ? 0 : 1},
+                    status: 1
+                },
+                // 父级菜单是否隐藏
+                parentIsHidden: {$parentRule && $parentRule.is_menu == 0 ? 'true' : 'false'}
             };
+        },
+        methods: {
+            onPidChange() {
+                const selectedOption = $(`select option[value="${this.form.pid}"]`);
+                const parentIsMenu = selectedOption.data('is-menu');
+                
+                // 如果父级是隐藏的，强制子菜单也隐藏
+                if (parentIsMenu === 0) {
+                    this.parentIsHidden = true;
+                    this.form.is_menu = 0;
+                } else {
+                    this.parentIsHidden = false;
+                    // 如果切换到顶级菜单，清空 href
+                    if (this.form.pid == 0) {
+                        this.form.href = '';
+                    } else {
+                        // 如果切换到子菜单，清空 icon
+                        this.form.icon = '';
+                    }
+                }
+            }
         }
     }).mount('#app');
 </script>

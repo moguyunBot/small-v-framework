@@ -1,6 +1,5 @@
 {extend name="base"}
 {block name="head"}
-<link rel="stylesheet" type="text/css" href="/static/js/bootstrap-select/bootstrap-select.min.css">
 <link rel="stylesheet" href="/static/jstree/themes/default/style.css">
 {/block}
 {block name="main"}
@@ -19,7 +18,7 @@
             {/if}
             <div class="mb-3">
                 <label class="form-label">状态</label>
-                <select class="form-control selectpicker" v-model="form.status">
+                <select class="form-control form-select" v-model="form.status">
                     <option value="1">正常</option>
                     <option value="0">禁用</option>
                 </select>
@@ -30,8 +29,6 @@
 </div>
 {/block}
 {block name="script"}
-
-<script type="text/javascript" src="/static/js/bootstrap-select/bootstrap-select.min.js"></script>
 <script src="/static/jstree/jstree.js"></script>
 <script>
     createVueApp({

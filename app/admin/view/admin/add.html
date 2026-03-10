@@ -1,14 +1,11 @@
 {extend name="base"}
-{block name="head"}
-<link rel="stylesheet" type="text/css" href="/static/js/bootstrap-select/bootstrap-select.min.css">
-{/block}
 {block name="main"}
 <div class="card">
     <div class="card-body">
         <form @submit.prevent="submit">
             <div class="mb-3">
                 <label class="form-label">角色</label>
-                <select class="form-control selectpicker" multiple v-model="form.role_ids" data-none-selected-text="请选择角色">
+                <select class="form-control form-select" multiple v-model="form.role_ids">
                     {foreach $roles as $v}
                     <option value="{$v.id}">{$v.name}</option>
                     {/foreach}
@@ -28,7 +25,7 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">状态</label>
-                <select class="form-control selectpicker" v-model="form.status">
+                <select class="form-control form-select" v-model="form.status">
                     <option value="1">正常</option>
                     <option value="0">禁用</option>
                 </select>
@@ -39,8 +36,6 @@
 </div>
 {/block}
 {block name="script"}
-
-<script type="text/javascript" src="/static/js/bootstrap-select/bootstrap-select.min.js"></script>
 <script>
     createVueApp({
         data() {
