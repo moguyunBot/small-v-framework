@@ -13,6 +13,25 @@ class Rule extends \think\Model
     protected $name = 'admin_rules';
     
     /**
+     * 字段列表
+     */
+    protected $schema = [
+        'id'          => 'int',
+        'title'       => 'string',
+        'icon'        => 'string',
+        'color'       => 'string',
+        'pid'         => 'int',
+        'href'        => 'string',
+        'sort'        => 'int',
+        'is_menu'     => 'int',
+        'create_time' => 'int',
+        'update_time' => 'int',
+        'status'      => 'int',
+        'type'        => 'string',
+        'plugin'      => 'string',
+    ];
+    
+    /**
      * 自动时间戳
      * @var bool
      */
@@ -60,12 +79,15 @@ class Rule extends \think\Model
             // 递归生成子菜单 HTML
             $sonHtml = self::recursion($list, $v['id'], $currentPath);
 
+            // 颜色样式（仅顶级菜单有效）
+            $colorStyle = !empty($v['color']) ? ' style="color:' . htmlspecialchars($v['color']) . '"' : '';
+
             if ($sonHtml === '') {
-                $html .= '<li class="nav-item ' . $v['active'] . '"><a href="' . $v['href'] . '"><i class="' . $v['icon'] . '"></i> <span>' . $v['title'] . '</span></a></li>';
+                $html .= '<li class="nav-item ' . $v['active'] . '"><a href="' . $v['href'] . '"' . $colorStyle . '><i class="' . $v['icon'] . '"></i> <span>' . $v['title'] . '</span></a></li>';
             } else {
                 $isOpen = str_contains($sonHtml, 'active') ? 'active open' : '';
                 $icon   = $v['icon'] ?: 'iconfont icon-xitongshezhi';
-                $html  .= '<li class="nav-item nav-item-has-subnav ' . $isOpen . '"><a href="javascript:void(0)"><i class="' . $icon . '"></i> <span>' . $v['title'] . '</span></a><ul class="nav nav-subnav">' . $sonHtml . '</ul></li>';
+                $html  .= '<li class="nav-item nav-item-has-subnav ' . $isOpen . '"><a href="javascript:void(0)"' . $colorStyle . '><i class="' . $icon . '"></i> <span>' . $v['title'] . '</span></a><ul class="nav nav-subnav">' . $sonHtml . '</ul></li>';
             }
         }
 
