@@ -42,9 +42,12 @@ class Base
         $this->get        = $request->get();
         $this->controller = $request->controller;
         $this->action     = $request->action;
-
+        
         View::assign('iframe', !empty($this->get['iframe']) ? 1 : 0);
         View::assign('isSuperAdmin', $this->isSuperAdmin());
+        var_dump(!empty($request->plugin));
+        print_r(PHP_EOL);
+        View::assign('isPlugin', !empty($request->plugin));
 
         $this->loadModel();
         $this->generateMenu();

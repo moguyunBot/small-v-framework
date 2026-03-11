@@ -1,0 +1,168 @@
+{extend name="base"}
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0"><i class="mdi mdi-folder-multiple-image me-1"></i> 文件管理</h5>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-danger" @click="batchDelete" :disabled="!selected.length">
+        <i class="mdi mdi-delete"></i> 批量删除 <span v-if="selected.length">({{ selected.length }})</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- 类型选项卡 -->
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item"><a class="nav-link {if $type=='images'}active{/if}" href="?type=images"><i class="mdi mdi-image"></i> 图片 <span class="badge bg-secondary ms-1" id="cnt-images">-</span></a></li>
+      <li class="nav-item"><a class="nav-link {if $type=='videos'}active{/if}" href="?type=videos"><i class="mdi mdi-video"></i> 视频 <span class="badge bg-secondary ms-1" id="cnt-videos">-</span></a></li>
+      <li class="nav-item"><a class="nav-link {if $type=='files'}active{/if}" href="?type=files"><i class="mdi mdi-file"></i> 文件 <span class="badge bg-secondary ms-1" id="cnt-files">-</span></a></li>
+    </ul>
+
+    <!-- 全选 -->
+    {if $files}
+    <div class="d-flex align-items-center mb-2 gap-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="checkAll" @change="toggleAll">
+        <label class="form-check-label" for="checkAll">全选</label>
+      </div>
+      <small class="text-muted">共 {$total} 个文件，当前第 {$page}/{$totalPages} 页</small>
+    </div>
+
+    <!-- 网格视图 -->
+    <div class="row g-3">
+      {foreach $files as $f}
+      <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="file-card border rounded p-2 h-100" :class="{selected: isSelected('{$f.path}')}">
+          <div class="form-check mb-1">
+            <input class="form-check-input" type="checkbox" :value="'{$f.path}'" v-model="selected">
+          </div>
+          {if in_array($f.ext, ['jpg','jpeg','png','gif','webp','bmp'])}
+          <div class="file-thumb" @click="preview('{$f.path}')">
+            <img src="{$f.path}" loading="lazy" class="img-fluid rounded" style="width:100%;height:100px;object-fit:cover;cursor:pointer">
+          </div>
+          {else}
+          <div class="file-thumb d-flex align-items-center justify-content-center" style="height:100px;background:#f8f9fa;border-radius:4px">
+            <i class="mdi mdi-file-outline fs-1 text-muted"></i>
+          </div>
+          {/if}
+          <div class="mt-1">
+            <p class="mb-0 small text-truncate" title="{$f.name}">{$f.name}</p>
+            <small class="text-muted">{$f.size_format}</small>
+          </div>
+          <div class="d-flex gap-1 mt-1">
+            <a href="{$f.path}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:11px;padding:1px 6px"><i class="mdi mdi-open-in-new"></i></a>
+            <button class="btn btn-xs btn-outline-danger" style="font-size:11px;padding:1px 6px" @click="delFile('{$f.path}')"><i class="mdi mdi-delete"></i></button>
+            <button class="btn btn-xs btn-outline-primary" style="font-size:11px;padding:1px 6px" @click="copyPath('{$f.path}')"><i class="mdi mdi-content-copy"></i></button>
+          </div>
+        </div>
+      </div>
+      {/foreach}
+    </div>
+
+    <!-- 分页 -->
+    {if $totalPages > 1}
+    <nav class="mt-3">
+      <ul class="pagination pagination-sm">
+        {if $page > 1}<li class="page-item"><a class="page-link" href="?type={$type}&page=1">首页</a></li>{/if}
+        {if $page > 1}<li class="page-item"><a class="page-link" href="?type={$type}&page={$page-1}">上一页</a></li>{/if}
+        <li class="page-item active"><span class="page-link">{$page} / {$totalPages}</span></li>
+        {if $page < $totalPages}<li class="page-item"><a class="page-link" href="?type={$type}&page={$page+1}">下一页</a></li>{/if}
+        {if $page < $totalPages}<li class="page-item"><a class="page-link" href="?type={$type}&page={$totalPages}">末页</a></li>{/if}
+      </ul>
+    </nav>
+    {/if}
+
+    {else}
+    <div class="text-center text-muted py-5"><i class="mdi mdi-folder-open fs-1"></i><p class="mt-2">暂无文件</p></div>
+    {/if}
+  </div><!-- card-body -->
+</div>
+
+<!-- 图片预览弹窗 -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">图片预览</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img :src="previewSrc" class="img-fluid">
+      </div>
+      <div class="modal-footer">
+        <a :href="previewSrc" target="_blank" class="btn btn-sm btn-outline-primary">新窗口打开</a>
+        <button class="btn btn-sm btn-outline-secondary" @click="copyPath(previewSrc)">复制路径</button>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+const _app = createVueApp({
+  data() {
+    return {
+      selected: [],
+      previewSrc: ''
+    };
+  },
+  mounted() {
+    this.loadStats();
+  },
+  methods: {
+    isSelected(path) { return this.selected.includes(path); },
+    toggleAll(e) {
+      if (e.target.checked) {
+        this.selected = Array.from(document.querySelectorAll('input[type=checkbox][value]')).map(el => el.value);
+      } else {
+        this.selected = [];
+      }
+    },
+    delFile(path) {
+      this.confirm('确定删除该文件？', () => {
+        this.post('/admin/File/del', { path }, res => {
+          this.alert(res, () => { if (res.code == 1) location.reload(); });
+        });
+      });
+    },
+    batchDelete() {
+      if (!this.selected.length) return;
+      this.confirm(`确定删除选中的 ${this.selected.length} 个文件？`, () => {
+        this.post('/admin/File/batchDel', { paths: this.selected }, res => {
+          this.alert(res, () => { if (res.code == 1) location.reload(); });
+        });
+      });
+    },
+    copyPath(path) {
+      navigator.clipboard.writeText(location.origin + path).then(() => {
+        this.toast('路径已复制');
+      });
+    },
+    preview(path) {
+      this.previewSrc = path;
+      new bootstrap.Modal(document.getElementById('previewModal')).show();
+    },
+    loadStats() {
+      fetch('/admin/File/stats').then(r => r.json()).then(res => {
+        if (res.code === 0) {
+          Object.entries(res.data).forEach(([type, info]) => {
+            const el = document.getElementById('cnt-' + type);
+            if (el) el.textContent = info.count + ' · ' + info.size;
+          });
+        }
+      });
+    },
+    toast(msg) {
+      const t = document.createElement('div');
+      t.className = 'position-fixed bottom-0 end-0 m-3 alert alert-success py-2 px-3';
+      t.style.zIndex = 9999;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2000);
+    }
+  }
+});
+_app.mount('#app');
+</script>
+{/block}

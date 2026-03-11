@@ -114,6 +114,7 @@ ul.pagination li:last-child span {
     <aside class="lyear-layout-sidebar">
 
       <!-- logo -->
+      {if !$isPlugin}
       <div id="logo" class="sidebar-header">
         <a href="/admin" style="display: flex; align-items: center; justify-content: center; padding: 20px 0; text-decoration: none;">
           <svg width="140" height="40" viewBox="0 0 140 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -161,6 +162,7 @@ ul.pagination li:last-child span {
           </svg>
         </a>
       </div>
+      {/if}
       <div class="lyear-layout-sidebar-info lyear-scroll">
 
         <nav class="sidebar-main">
@@ -174,6 +176,8 @@ ul.pagination li:last-child span {
     </aside>
     <!--End 左侧导航-->
 
+    
+    {if !$isPlugin}
     <!--头部信息-->
     <header class="lyear-layout-header">
 
@@ -410,9 +414,10 @@ ul.pagination li:last-child span {
 
     </header>
     <!--End 头部信息-->
+    {/if}
 
     <!--页面主要内容-->
-    <main class="lyear-layout-content">
+    <main class="lyear-layout-content" {if $isPlugin}style="padding-top:0;"{/if}>
 
       <div class="container-fluid" id="app">
         {block name="main"}{/block}

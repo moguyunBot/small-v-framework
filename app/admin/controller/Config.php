@@ -30,6 +30,7 @@ class Config extends Base
             return view('config/index', [
                 'configs' => [],
                 'key' => '',
+                'plugin' => $pluginId,
                 'emptyMessage' => "系统配置暂未配置任何配置项"
             ]);
         }
@@ -96,7 +97,9 @@ class Config extends Base
         
         return view('config/index', [
             'configs' => $configs, 
-            'key' => $key
+            'key' => $key,
+            'plugin' => $pluginId,
+            'iframe' => $this->get['iframe'] ?? '',
         ]);
     }
     

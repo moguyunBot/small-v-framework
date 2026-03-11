@@ -29,7 +29,7 @@
         <ul class="nav nav-tabs nav-tabs-line">
             {foreach $configs as $k=>$v}
             <li class="nav-item">
-                <a href="?key={$k}" class="nav-link {if $key==$k}active{/if}">{$v.title}</a>
+                <a href="?key={$k}{if $plugin}&plugin={$plugin}{/if}{if $iframe}&iframe={$iframe}{/if}" class="nav-link {if $key==$k}active{/if}">{$v.title}</a>
             </li>
             {/foreach}
         </ul>
