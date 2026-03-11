@@ -126,13 +126,11 @@ class Base
     /**
      * 渲染视图
      */
-    protected function view(?string $template = null, array $vars = []): Response
+    protected function view(array $vars = []): Response
     {
-        if (!$template) {
-            $parts    = explode('\\', $this->controller);
-            $ctrl     = strtolower(end($parts));
-            $template = $ctrl . '/' . $this->action;
-        }
+        $parts    = explode('\\', $this->controller);
+        $ctrl     = strtolower(end($parts));
+        $template = $ctrl . '/' . $this->action;
         View::assign('base_template', base_path() . '/app/admin/view/base.html');
         return view($template, $vars);
     }

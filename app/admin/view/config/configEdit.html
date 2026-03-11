@@ -1,0 +1,97 @@
+{extend name="base"}
+{block name="main"}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">编辑配置项 - {$group.group_title}</h5>
+    </div>
+    <div class="card-body">
+        <form @submit.prevent="submit">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">配置类型 <span class="text-danger">*</span></label>
+                        <select class="form-control" v-model="form.config_type" required>
+                            <option value="text">文本框</option>
+                            <option value="textarea">多行文本</option>
+                            <option value="number">数字</option>
+                            <option value="password">密码</option>
+                            <option value="image">单图上传</option>
+                            <option value="images">多图上传</option>
+                            <option value="video">单视频上传</option>
+                            <option value="videos">多视频上传</option>
+                            <option value="radio">单选框</option>
+                            <option value="checkbox">多选框</option>
+                            <option value="select">下拉选择</option>
+                            <option value="editor">富文本编辑器</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">配置项标识 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" v-model="form.config_key" placeholder="如：site_name" required>
+                        <small class="text-muted">英文字母，唯一标识</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">配置项标题 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="form.config_title" placeholder="如：网站名称" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">默认值</label>
+                <input type="text" class="form-control" v-model="form.config_value" placeholder="配置项的默认值">
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">配置选项（JSON格式）</label>
+                <textarea class="form-control" v-model="form.config_options" rows="5" placeholder='[{"key":"1","name":"选项1"},{"key":"2","name":"选项2"}]'></textarea>
+                <small class="text-muted">仅 radio、checkbox、select 类型需要填写，JSON 格式</small>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">配置说明</label>
+                <input type="text" class="form-control" v-model="form.config_desc" placeholder="配置项的说明文字">
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">排序</label>
+                <input type="number" class="form-control" v-model="form.sort">
+                <small class="text-muted">数字越大越靠后</small>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">状态</label>
+                <select class="form-control form-select" v-model="form.status">
+                    <option value="1">启用</option>
+                    <option value="0">停用</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="mdi mdi-check"></i> 提交
+                </button>
+                <a href="manage?group={$group.group_key}" class="btn btn-secondary">
+                    <i class="mdi mdi-arrow-left"></i> 返回
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+createVueApp({
+    data() {
+        return {
+            form: JSON.parse('{$config|json_encode|raw}')
+        };
+    }
+}).mount('#app');
+</script>
+{/block}

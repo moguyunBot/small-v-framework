@@ -20,7 +20,7 @@ class Rule extends Base{
             $rules = $this->model->where('plugin', '')->order('sort asc,id desc')->select();
         }
         $menus = $this->recursion_title($rules);
-        return $this->view('',['menus'=>$menus, 'pluginId'=>$pluginId]);
+        return $this->view(['menus'=>$menus, 'pluginId'=>$pluginId]);
     }
     
     /**
@@ -85,7 +85,7 @@ class Rule extends Base{
         $pid = $this->get['pid'] ?? 0;
         $parentRule = $pid > 0 ? $this->model->find($pid) : null;
         
-        return $this->view('', [
+        return $this->view( [
             'menus'      => $menus,
             'pid'        => $pid,
             'parentRule' => $parentRule,
@@ -133,7 +133,7 @@ class Rule extends Base{
         
         $parentRule = $rule['pid'] > 0 ? $this->model->find($rule['pid']) : null;
         
-        return $this->view('', [
+        return $this->view( [
             'rule'       => $rule, 
             'menus'      => $menus,
             'parentRule' => $parentRule,

@@ -18,7 +18,7 @@ class Index extends Base{
     public function index(){
         // 获取系统监控数据
         $systemData = $this->getSystemData();
-        return $this->view('', ['systemData' => $systemData]);
+        return $this->view( ['systemData' => $systemData]);
     }
     
     /**
@@ -208,7 +208,7 @@ class Index extends Base{
             return success('登录成功','index');
         }
         $session->delete('admin');
-        return $this->view('');
+        return $this->view();
     }
     
     /**

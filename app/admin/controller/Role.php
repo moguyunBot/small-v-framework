@@ -14,7 +14,7 @@ class Role extends Base{
     public function index(){
         $where = [];
         $roles = $this->model->where($where)->paginate(['list_rows'=>20,'query'=>$this->get]);
-        return $this->view('',['roles'=>$roles]);
+        return $this->view(['roles'=>$roles]);
     }
  
     /**
@@ -44,7 +44,7 @@ class Role extends Base{
         // 获取插件权限（按插件分组，只返回已安装且启用的）
         $pluginRules = $this->getPluginRules([]);
         
-        return $this->view('',[
+        return $this->view([
             'systemRules' => $systemRules,
             'pluginRules' => $pluginRules,
         ]);
@@ -81,7 +81,7 @@ class Role extends Base{
         // 获取插件权限（按插件分组，只返回已安装且启用的）
         $pluginRules = $this->getPluginRules($checkedRules);
         
-        return $this->view('',[
+        return $this->view([
             'systemRules' => $systemRules,
             'pluginRules' => $pluginRules,
             'role'        => $role,

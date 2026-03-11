@@ -15,7 +15,7 @@ class Admin extends Base{
         $where = [];
         $admins = $this->model->where($where)->paginate(['list_rows'=>20,'query'=>$this]);
         // print_r($admins);
-        return $this->view('',['admins'=>$admins]);
+        return $this->view(['admins'=>$admins]);
     }
     
     /**
@@ -52,7 +52,7 @@ class Admin extends Base{
             ['rules','<>','*'],
             ['status','=',1],
         ])->order('id desc')->select();
-        return $this->view('',['roles'=>$roles]);
+        return $this->view(['roles'=>$roles]);
     }
     
     /**
@@ -94,7 +94,7 @@ class Admin extends Base{
         $roles = Role::where([
             ['status','=',1],
         ])->order('id desc')->select();
-        return $this->view('',['roles'=>$roles,'admin'=>$admin]);
+        return $this->view(['roles'=>$roles,'admin'=>$admin]);
     }
     
     /**
@@ -153,7 +153,7 @@ class Admin extends Base{
             }
             return success('修改成功');
         }
-        return $this->view('',['admin'=>$admin]);
+        return $this->view(['admin'=>$admin]);
     }
     
     /**
@@ -188,6 +188,6 @@ class Admin extends Base{
             }
             return success('密码修改成功，请重新登录','/admin/index/login');
         }
-        return $this->view('');
+        return $this->view();
     }
 }

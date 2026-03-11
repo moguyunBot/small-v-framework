@@ -56,7 +56,7 @@ class Plugin extends Base
         }
         unset($p);
 
-        return $this->view('plugin/index', ['plugins' => $plugins]);
+        return $this->view(['plugins' => $plugins]);
     }
 
     /**

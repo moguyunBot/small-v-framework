@@ -297,7 +297,7 @@ class Config extends Base
     public function groupIndex()
     {
         $list = ConfigGroupModel::order('sort asc, id desc')->paginate(20);
-        return $this->view('config/configgroup/index', ['list' => $list]);
+        return $this->view(['list' => $list]);
     }
 
     /**
@@ -319,7 +319,7 @@ class Config extends Base
             }
             return success('添加成功', 'groupIndex');
         }
-        return $this->view('config/configgroup/add');
+        return $this->view();
     }
 
     /**
@@ -346,7 +346,7 @@ class Config extends Base
             }
             return success('编辑成功', 'groupIndex');
         }
-        return $this->view('config/configgroup/edit', ['group' => $group]);
+        return $this->view(['group' => $group]);
     }
 
     /**
@@ -389,7 +389,7 @@ class Config extends Base
 
         $list = ConfigModel::where($where)->order('sort asc, id desc')->paginate(20);
 
-        return $this->view('config/config_manage', [
+        return $this->view([
             'groupKey' => $groupKey,
             'pluginId' => $pluginId,
             'group'    => $group,
@@ -437,7 +437,7 @@ class Config extends Base
             if (!empty($this->get['iframe'])) $back .= '&iframe=1';
             return success('添加成功', $back);
         }
-        return $this->view('config/config_add', ['group' => $group, 'pluginId' => $pluginId]);
+        return $this->view(['group' => $group, 'pluginId' => $pluginId]);
     }
 
     /**
@@ -482,7 +482,7 @@ class Config extends Base
         if (!empty($config['config_options']) && is_array($config['config_options'])) {
             $config['config_options'] = json_encode($config['config_options'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         }
-        return $this->view('config/config_edit', ['config' => $config, 'group' => $group, 'pluginId' => $pluginId]);
+        return $this->view(['config' => $config, 'group' => $group, 'pluginId' => $pluginId]);
     }
 
     /**

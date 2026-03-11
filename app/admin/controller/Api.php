@@ -40,7 +40,7 @@ class Api extends Base
             }
         }
         
-        return $this->view('api/index');
+        return $this->view();
     }
     
     /**

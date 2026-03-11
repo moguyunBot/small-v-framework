@@ -1,9 +1,6 @@
 <?php
 namespace app\admin\controller;
 
-use app\admin\model\Config as ConfigModel;
-use app\admin\model\ConfigGroup as ConfigGroupModel;
-
 /**
  * 开发者工具控制器
  */
@@ -11,13 +8,12 @@ class Dev extends Base
 {
     /**
      * 表单构建器
-     * @return \Webman\Http\Response
      */
     public function formBuild()
     {
-        return view();
+        return $this->view();
     }
-    
+
     /**
      * 缓存管理
      * @return \Webman\Http\Response
@@ -53,7 +49,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/cache');
+        return $this->view();
     }
     
     /**
@@ -100,7 +96,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/logs');
+        return $this->view();
     }
     
     /**
@@ -148,7 +144,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/database');
+        return $this->view();
     }
     
     /**
@@ -201,7 +197,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/file_manager');
+        return $this->view();
     }
     
     /**
@@ -247,7 +243,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/composer');
+        return $this->view();
     }
     
     /**
@@ -256,7 +252,7 @@ class Dev extends Base
      */
     public function tools()
     {
-        return $this->view('dev/tools');
+        return $this->view();
     }
     
     /**
@@ -290,7 +286,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/performance');
+        return $this->view();
     }
     
     /**
@@ -321,7 +317,7 @@ class Dev extends Base
             }
         }
         
-        return $this->view('dev/crontab');
+        return $this->view();
     }
     
     /**
