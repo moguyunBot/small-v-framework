@@ -7,7 +7,6 @@ use Webman\Http\Response;
 
 /**
  * 后台基础控制器
- * 所有主后台控制器都应该继承此类
  */
 class Base
 {
@@ -29,7 +28,6 @@ class Base
         $this->controller = $request->controller;
         $this->action     = $request->action;
 
-        // 注入 iframe 模式变量
         View::assign('iframe', !empty($this->get['iframe']) ? 1 : 0);
 
         // 注入超级管理员标识
@@ -46,10 +44,7 @@ class Base
         }
         View::assign('isSuperAdmin', $isSuperAdmin);
 
-        // 自动加载对应的模型
         $this->loadModel();
-
-        // 生成后台菜单
         $this->generateMenu();
     }
 
@@ -66,88 +61,43 @@ class Base
 
     /**
      * 生成后台菜单
-     * 若是插件控制器，只显示当前插件的菜单
+     * 插件后台：plugin = 插件标识，平铺菜单
+     * 主后台：plugin = ''，递归树形菜单
      */
     protected function generateMenu(): void
     {
-        // 插件控制器：从插件 menu.php 生成菜单
+        // 判断是插件后台还是主后台
+        $plugin = '';
         if (str_starts_with($this->controller ?? '', 'plugin\\')) {
             preg_match('/^plugin\\\\([^\\\\]+)/', $this->controller, $m);
-            $identifier = $m[1] ?? '';
+            $plugin = $m[1] ?? '';
+        }
+
+        $rules = Rule::where('plugin', $plugin)
+            ->where('status', 1)
+            ->order('sort asc, id asc')
+            ->select()->toArray();
+
+        if ($plugin !== '') {
+            // 插件菜单：平铺，active 用路径匹配
+            $path = strtolower(request()->path());
             $html = '';
-            if ($identifier) {
-                $menuFile = base_path("plugin/{$identifier}/config/menu.php");
-                if (file_exists($menuFile)) {
-                    $menu = require $menuFile;
-                    foreach ($menu['menus'] ?? [] as $item) {
-                        $html .= $this->renderPluginMenuItem($item);
-                    }
-                }
+            foreach ($rules as $rule) {
+                if (empty($rule['is_menu'])) continue;
+                $href      = $rule['href'] ?? '';
+                $hrefLower = strtolower($href);
+                $active    = ($href && ($path === $hrefLower || str_starts_with($path, rtrim($hrefLower, '/index') . '/'))) ? ' active' : '';
+                $icon      = htmlspecialchars($rule['icon'] ?: 'mdi mdi-circle-small');
+                $title     = htmlspecialchars($rule['title'] ?? '');
+                $html .= "<li class=\"nav-item{$active}\"><a class=\"nav-link\" href=\"{$href}\"><i class=\"{$icon}\"></i><span>{$title}</span></a></li>";
             }
-            View::assign('menu_html', $html);
-            return;
+        } else {
+            // 主后台菜单：递归树形结构
+            $trees = Rule::recursion($rules);
+            $html  = Rule::recursion_menu($trees);
         }
 
-        // 主后台：生成系统菜单
-        $admin     = admin();
-        $rule_ids  = $this->getAdminRuleIds($admin);
-        $all_rules = $this->getAllRules($rule_ids);
-        $trees     = Rule::recursion($all_rules);
-        View::assign('menu_html', Rule::recursion_menu($trees));
-    }
-
-    /**
-     * 渲染插件菜单项 HTML
-     */
-    protected function renderPluginMenuItem(array $item): string
-    {
-        $title    = htmlspecialchars($item['title'] ?? '');
-        $href     = $item['href'] ?? '';
-        $icon     = $item['icon'] ?? 'mdi mdi-circle-small';
-        $children = $item['children'] ?? [];
-        if ($children) {
-            $sub = '';
-            foreach ($children as $child) {
-                $sub .= $this->renderPluginMenuItem($child);
-            }
-            return "<li class=\"nav-item has-sub\"><a class=\"nav-link\" href=\"javascript:void(0)\"><i class=\"{$icon}\"></i><span>{$title}</span></a><ul class=\"nav-sub\">{$sub}</ul></li>";
-        }
-        $uri      = strtolower(request()->path());
-        $hrefLower = strtolower($href);
-        // 精确匹配或前缀匹配（子路径也 active）
-        $active = ($href && ($uri === $hrefLower || str_starts_with($uri, rtrim($hrefLower, '/index') . '/'))) ? ' active' : '';
-        return "<li class=\"nav-item{$active}\"><a class=\"nav-link\" href=\"{$href}\"><i class=\"{$icon}\"></i><span>{$title}</span></a></li>";
-    }
-
-    /**
-     * 获取管理员的权限规则ID列表
-     */
-    protected function getAdminRuleIds(?array $admin): array
-    {
-        $rule_ids = [];
-        if ($admin && !empty($admin['roles'])) {
-            $roles = Role::whereIn('id', $admin['roles'])->column('rules');
-            foreach ($roles as $rule_string) {
-                if (!$rule_string) continue;
-                if ($rule_string === '*' || in_array('*', explode(',', $rule_string))) {
-                    return ['*'];
-                }
-                $rule_ids = array_merge($rule_ids, explode(',', $rule_string));
-            }
-        }
-        return $rule_ids;
-    }
-
-    /**
-     * 获取规则列表（只取系统菜单）
-     */
-    protected function getAllRules(array $rule_ids): array
-    {
-        $all_rules = Rule::where('plugin', '')->order('sort asc, id desc')->select()->toArray();
-        if (!in_array('*', $rule_ids)) {
-            $all_rules = array_filter($all_rules, fn($rule) => in_array($rule['id'], $rule_ids));
-        }
-        return $all_rules;
+        View::assign('menu_html', $html);
     }
 
     /**
