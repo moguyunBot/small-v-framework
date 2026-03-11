@@ -1,0 +1,173 @@
+{extend name="base"}
+{block name="head"}
+<style>
+.upgrade-card { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.07); border:1px solid #c8d0e0; }
+.version-badge { font-size:13px; padding:4px 12px; border-radius:20px; font-weight:600; }
+.badge-current  { background:#e8f4fd; color:#1a73e8; }
+.badge-latest   { background:#e6f9f0; color:#22863a; }
+.badge-outdated { background:#fff3cd; color:#856404; }
+.changelog-box  { background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:16px; font-size:13px; line-height:1.8; white-space:pre-wrap; max-height:280px; overflow-y:auto; }
+.log-box { background:#1a1a2e; color:#a8ff78; border-radius:8px; padding:16px; font-size:12px; font-family:monospace; max-height:320px; overflow-y:auto; white-space:pre-wrap; }
+.step-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+.step-item:last-child { border-bottom:none; }
+.step-num { width:28px; height:28px; border-radius:50%; background:#667eea; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+</style>
+{/block}
+
+{block name="main"}
+<div class="row">
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="mdi mdi-rocket-launch me-1"></i> 系统框架升级</h5>
+        <span class="version-badge badge-current">当前版本 v{$current_version}</span>
+      </div>
+      <div class="card-body">
+        <div id="app">
+
+          <!-- 检查版本区域 -->
+          <div class="upgrade-card p-4 mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <h6 class="mb-1 fw-bold">版本检查</h6>
+                <div class="text-muted" style="font-size:13px">从远端服务器获取最新版本信息</div>
+              </div>
+              <button class="btn btn-primary" @click="checkVersion" :disabled="checking">
+                <i class="mdi" :class="checking ? 'mdi-loading mdi-spin' : 'mdi-cloud-search'"></i>
+                {{ checking ? '检查中...' : '检查更新' }}
+              </button>
+            </div>
+
+            <!-- 结果展示 -->
+            <div v-if="checkResult" class="mt-3">
+              <div v-if="!checkResult.upgradable" class="alert alert-success mb-0">
+                <i class="mdi mdi-check-circle me-1"></i>
+                已是最新版本 <strong>v{{ checkResult.current }}</strong>，无需升级
+              </div>
+              <div v-else>
+                <div class="alert alert-warning mb-3">
+                  <i class="mdi mdi-arrow-up-circle me-1"></i>
+                  发现新版本 <strong class="text-success">v{{ checkResult.latest }}</strong>，当前 v{{ checkResult.current }}
+                  <span v-if="checkResult.released_at" class="ms-2 text-muted" style="font-size:12px">发布于 {{ checkResult.released_at }}</span>
+                </div>
+                <div v-if="checkResult.changelog" class="mb-3">
+                  <div class="fw-bold mb-2" style="font-size:13px">更新日志：</div>
+                  <div class="changelog-box">{{ checkResult.changelog }}</div>
+                </div>
+                <div class="upgrade-card p-3 mb-3" style="background:#fffbf0;border-color:#f6c90e">
+                  <div class="fw-bold mb-2" style="font-size:13px"><i class="mdi mdi-alert-outline me-1 text-warning"></i>升级前请注意：</div>
+                  <ul class="mb-0" style="font-size:13px;padding-left:20px">
+                    <li>升级会自动备份 <code>app/</code> 目录到 <code>runtime/backup/</code></li>
+                    <li>不会覆盖 <code>config/app.php</code>（保留你的配置）</li>
+                    <li>插件目录 <code>plugin/</code> 不受影响</li>
+                    <li>建议先备份数据库</li>
+                  </ul>
+                </div>
+                <button class="btn btn-success" @click="doUpgrade" :disabled="upgrading">
+                  <i class="mdi" :class="upgrading ? 'mdi-loading mdi-spin' : 'mdi-rocket-launch'"></i>
+                  {{ upgrading ? '升级中...' : '立即升级到 v' + checkResult.latest }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 升级日志 -->
+          <div v-if="upgradeLogs.length" class="upgrade-card p-4 mb-4">
+            <h6 class="fw-bold mb-3"><i class="mdi mdi-console me-1"></i>升级日志</h6>
+            <div class="log-box" ref="logBox">{{ upgradeLogs.join('\n') }}</div>
+            <div v-if="upgradeSuccess" class="alert alert-success mt-3 mb-0">
+              <i class="mdi mdi-check-circle me-1"></i>
+              <strong>升级成功！</strong> 建议清除缓存后刷新页面。
+              <a href="/admin/Dev/cache" class="btn btn-sm btn-outline-success ms-2">清除缓存</a>
+            </div>
+          </div>
+
+          <!-- 升级步骤说明 -->
+          <div class="upgrade-card p-4">
+            <h6 class="fw-bold mb-3"><i class="mdi mdi-information-outline me-1"></i>升级流程说明</h6>
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div><div class="fw-bold" style="font-size:13px">下载补丁包</div><div class="text-muted" style="font-size:12px">从远端下载新版本 zip 到 runtime/ 目录</div></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div><div class="fw-bold" style="font-size:13px">备份当前文件</div><div class="text-muted" style="font-size:12px">将 app/ 目录备份到 runtime/backup/</div></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div><div class="fw-bold" style="font-size:13px">解压覆盖</div><div class="text-muted" style="font-size:12px">解压补丁包，覆盖对应文件（config/app.php 不覆盖）</div></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div><div class="fw-bold" style="font-size:13px">数据库迁移</div><div class="text-muted" style="font-size:12px">若存在 upgrade.sql 则自动执行</div></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">5</div>
+              <div><div class="fw-bold" style="font-size:13px">更新版本号</div><div class="text-muted" style="font-size:12px">自动更新 config/app.php 中的 framework_version</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+const _app = createVueApp({
+    data() {
+        return {
+            checking:       false,
+            upgrading:      false,
+            checkResult:    null,
+            upgradeLogs:    [],
+            upgradeSuccess: false,
+        };
+    },
+    methods: {
+        checkVersion() {
+            this.checking     = true;
+            this.checkResult  = null;
+            this.post('/admin/Upgrade/index', { action: 'check' }, res => {
+                this.checking = false;
+                if (res.code === 0) {
+                    this.checkResult = res.data;
+                } else {
+                    this.alert({ code: 0, msg: res.msg || '检查失败' });
+                }
+            });
+        },
+        doUpgrade() {
+            if (!this.checkResult) return;
+            this.confirm('确定要升级吗？升级过程不可中断，建议先备份数据库。', () => {
+                this.upgrading      = true;
+                this.upgradeSuccess = false;
+                this.upgradeLogs    = ['开始升级...'];
+                this.post('/admin/Upgrade/index', {
+                    action:       'do_upgrade',
+                    download_url: this.checkResult.download_url,
+                    new_version:  this.checkResult.latest,
+                }, res => {
+                    this.upgrading = false;
+                    if (res.code === 1) {
+                        this.upgradeLogs    = res.data.log || [];
+                        this.upgradeLogs.push('✅ 升级完成！');
+                        this.upgradeSuccess = true;
+                        this.checkResult    = null;
+                    } else {
+                        this.upgradeLogs.push('❌ 升级失败：' + (res.msg || '未知错误'));
+                    }
+                    this.$nextTick(() => {
+                        const box = this.$refs.logBox;
+                        if (box) box.scrollTop = box.scrollHeight;
+                    });
+                });
+            });
+        },
+    }
+});
+_app.mount('#app');
+</script>
+{/block}
