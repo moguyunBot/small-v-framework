@@ -74,12 +74,36 @@ class Base
             ? '/app/' . $plugin . '/admin/' . $controller . '/' . $action
             : '/admin/' . $controller . '/' . $action;
 
-        $rules = Rule::where('plugin', $plugin)
-            ->where('status', 1)
-            ->order('sort asc, id asc')
-            ->select()->toArray();
+        // 获取当前管理员有权限的规则 ID
+        $admin   = admin();
+        $ruleIds = [];
+        $isSuperAdmin = false;
+        if ($admin && !empty($admin['roles'])) {
+            $roleRules = Role::whereIn('id', $admin['roles'])->column('rules');
+            foreach ($roleRules as $str) {
+                if ($str === '*' || in_array('*', explode(',', $str))) {
+                    $isSuperAdmin = true;
+                    break;
+                }
+                if (!empty($str)) {
+                    array_push($ruleIds, ...explode(',', $str));
+                }
+            }
+        }
 
-        $html = Rule::recursion($rules, 0, $currentPath);
+        $query = Rule::where('plugin', $plugin)->where('status', 1)->order('sort asc, id asc');
+
+        // 非超级管理员只查有权限的节点
+        if (!$isSuperAdmin) {
+            if (empty($ruleIds)) {
+                View::assign('menu_html', '');
+                return;
+            }
+            $query = $query->whereIn('id', array_unique($ruleIds));
+        }
+
+        $rules = $query->select()->toArray();
+        $html  = Rule::recursion($rules, 0, $currentPath);
         View::assign('menu_html', $html);
     }
 
