@@ -25,10 +25,10 @@
                 <input type="text" class="form-control" v-model="form.icon" :disabled="form.pid != 0" placeholder="顶级菜单才需要填写，如：mdi mdi-home">
             </div>
             
-            <!-- href 字段：子菜单才需要 -->
+            <!-- href 字段 -->
             <div class="mb-3">
                 <label class="form-label">href</label>
-                <input type="text" class="form-control" v-model="form.href" :disabled="form.pid == 0" placeholder="子菜单才需要填写，如：/admin/user/index">
+                <input type="text" class="form-control" v-model="form.href" placeholder="如：/admin/user/index">
             </div>
             
             <div class="mb-3">

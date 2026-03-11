@@ -3,7 +3,6 @@ namespace app\admin\middleware;
 
 use ReflectionClass;
 use ReflectionException;
-use support\exception\BusinessException;
 use Webman\Http\Request;
 use Webman\Http\Response;
 use Webman\MiddlewareInterface;
@@ -29,7 +28,6 @@ class Auth implements MiddlewareInterface
     {
         $controller = $request->controller;
         $action = $request->action;
-        
         $code = 0;
         $msg = '';
         
@@ -149,8 +147,8 @@ class Auth implements MiddlewareInterface
         // 获取当前请求路径
         $path = request()->path();
         
-        // 判断是系统权限还是插件权限
-        if (str_starts_with($path, '/plugin/')) {
+        // 判断是系统权限还是插件权限（通过控制器命名空间判断）
+        if (str_starts_with($controller, 'plugin\\')) {
             // 插件权限检查
             return self::checkPluginPermission($path, $ruleIds, $code, $msg);
         }
@@ -200,6 +198,8 @@ class Auth implements MiddlewareInterface
     
     /**
      * 检查插件权限
+     * 路径格式：/app/{plugin}/admin/{controller}/{action}
+     * 匹配规则：精确匹配当前路径，或匹配同控制器前缀（允许 add/edit/del 等子操作）
      */
     protected static function checkPluginPermission(
         string $path,
@@ -207,26 +207,38 @@ class Auth implements MiddlewareInterface
         int &$code,
         string &$msg
     ): bool {
-        // 从路径提取插件标识 /plugin/{plugin}/{action}
-        $parts = explode('/', trim($path, '/'));
+        // 从路径提取插件标识
+        $parts  = explode('/', trim($path, '/'));
         $plugin = $parts[1] ?? '';
-        
-        // 查找匹配的插件权限规则
+
+        if (empty($plugin)) {
+            $msg  = '无插件权限';
+            $code = 403;
+            return false;
+        }
+
+        // 提取控制器前缀（去掉最后一段 action）
+        // 例：/app/blog/admin/post/add → /app/blog/admin/post/
+        $actionParts = $parts;
+        array_pop($actionParts);
+        $prefix = '/' . implode('/', $actionParts) . '/';
+
+        // 精确匹配当前路径，或前缀匹配同控制器下的所有操作
         $rule = Rule::whereIn('id', $ruleIds)
             ->where('type', 'plugin')
             ->where('plugin', $plugin)
-            ->where(function ($query) use ($path) {
-                // 精确匹配或前缀匹配（用于index）
+            ->where('status', 1)
+            ->where(function ($query) use ($path, $prefix) {
                 $query->where('href', $path)
-                      ->whereOr('href', rtrim($path, '/') . '/index');
+                      ->whereOr('href', 'like', $prefix . '%');
             })
             ->find();
-        
+
         if ($rule) {
             return true;
         }
 
-        $msg = '无插件权限';
+        $msg  = '无插件权限';
         $code = 403;
         return false;
     }
