@@ -1,0 +1,33 @@
+{extend name="$base_template"}
+{block name="main"}
+<div class="card">
+  <div class="card-body">
+    <form @submit.prevent="submit">
+      <div class="mb-3">
+        <label class="form-label">分类名称</label>
+        <input type="text" class="form-control" required v-model="form.name">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">描述</label>
+        <textarea class="form-control" rows="3" v-model="form.description"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">排序</label>
+        <input type="number" class="form-control" v-model="form.sort">
+      </div>
+      <button type="submit" class="btn btn-primary">保存</button>
+    </form>
+  </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+createVueApp({
+    data() {
+        return {
+            form: { name: '', description: '', sort: 0 }
+        };
+    }
+}).mount('#app');
+</script>
+{/block}

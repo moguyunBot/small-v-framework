@@ -53,6 +53,7 @@ class Base
      */
     protected function loadModel(): void
     {
+        if (!$this->controller) return;
         $controllerClass = str_replace('controller', 'model', $this->controller);
         if (class_exists($controllerClass)) {
             $this->model = new $controllerClass();
@@ -66,7 +67,6 @@ class Base
      */
     protected function generateMenu(): void
     {
-        // 判断是插件后台还是主后台
         $plugin = '';
         if (str_starts_with($this->controller ?? '', 'plugin\\')) {
             preg_match('/^plugin\\\\([^\\\\]+)/', $this->controller, $m);
@@ -78,24 +78,8 @@ class Base
             ->order('sort asc, id asc')
             ->select()->toArray();
 
-        if ($plugin !== '') {
-            // 插件菜单：平铺，active 用路径匹配
-            $path = strtolower(request()->path());
-            $html = '';
-            foreach ($rules as $rule) {
-                if (empty($rule['is_menu'])) continue;
-                $href      = $rule['href'] ?? '';
-                $hrefLower = strtolower($href);
-                $active    = ($href && ($path === $hrefLower || str_starts_with($path, rtrim($hrefLower, '/index') . '/'))) ? ' active' : '';
-                $icon      = htmlspecialchars($rule['icon'] ?: 'mdi mdi-circle-small');
-                $title     = htmlspecialchars($rule['title'] ?? '');
-                $html .= "<li class=\"nav-item{$active}\"><a class=\"nav-link\" href=\"{$href}\"><i class=\"{$icon}\"></i><span>{$title}</span></a></li>";
-            }
-        } else {
-            // 主后台菜单：递归树形结构
-            $trees = Rule::recursion($rules);
-            $html  = Rule::recursion_menu($trees);
-        }
+        $trees = Rule::recursion($rules);
+        $html  = Rule::recursion_menu($trees);
 
         View::assign('menu_html', $html);
     }

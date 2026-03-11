@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{block name="title"}{:get_config('blog.blog_title')?: '博客'}{/block}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Serif SC',Georgia,serif;background:#f9f7f4;color:#2c2c2c;line-height:1.8}
+a{color:#2c7a4b;text-decoration:none}a:hover{text-decoration:underline}
+.site-header{background:#fff;border-bottom:1px solid #e8e4df;padding:20px 0}
+.site-header .inner{max-width:860px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:center}
+.site-title{font-size:1.5rem;font-weight:700;color:#1a1a1a}
+.site-subtitle{font-size:.85rem;color:#888;margin-top:2px}
+.site-nav a{margin-left:18px;color:#555;font-size:.9rem}
+.main{max-width:860px;margin:40px auto;padding:0 20px;display:grid;grid-template-columns:1fr 260px;gap:40px}
+@media(max-width:680px){.main{grid-template-columns:1fr}}
+.post-card{background:#fff;border-radius:6px;padding:24px;margin-bottom:24px;border:1px solid #e8e4df}
+.post-card h2{font-size:1.2rem;margin-bottom:8px}
+.post-meta{font-size:.8rem;color:#999;margin-bottom:10px}
+.post-summary{color:#555;font-size:.95rem}
+.read-more{display:inline-block;margin-top:12px;font-size:.85rem;color:#2c7a4b}
+.sidebar-section{background:#fff;border-radius:6px;padding:18px;margin-bottom:20px;border:1px solid #e8e4df}
+.sidebar-section h4{font-size:.95rem;font-weight:700;margin-bottom:12px;color:#1a1a1a}
+.sidebar-section ul{list-style:none}
+.sidebar-section ul li{padding:4px 0;font-size:.9rem;border-bottom:1px solid #f0ede9}
+.sidebar-section ul li:last-child{border:0}
+.site-footer{text-align:center;padding:30px;font-size:.8rem;color:#aaa;border-top:1px solid #e8e4df;margin-top:40px}
+</style>
+{block name="head"}{/block}
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <div>
+      <div class="site-title"><a href="/blog">{:get_config('blog.blog_title')?: '我的博客'}</a></div>
+      <div class="site-subtitle">{:get_config('blog.blog_subtitle')?: ''}</div>
+    </div>
+    <nav class="site-nav">
+      <a href="/blog">首页</a>
+      <a href="/blog/archive">归档</a>
+    </nav>
+  </div>
+</header>
+<div class="main">
+  <div class="content">{block name="content"}{/block}</div>
+  <aside>
+    {block name="sidebar"}
+    <div class="sidebar-section">
+      <h4>分类</h4>
+      <ul>
+        {volist name="categories" id="cat"}
+        <li><a href="/blog/category/{$cat.slug}">{$cat.name}</a> <span style="color:#bbb">({$cat.post_count})</span></li>
+        {/volist}
+      </ul>
+    </div>
+    {/block}
+  </aside>
+</div>
+<footer class="site-footer"> &copy; {:date('Y')} {: get_config('blog.blog_title')?: '博客'}</footer>
+</body>
+</html>

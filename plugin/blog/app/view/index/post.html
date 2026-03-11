@@ -1,0 +1,49 @@
+{extend name="layout"}
+{block name="title"}{$post.title} - {:get_config('blog.blog_title') ?: '博客'}{/block}
+{block name="content"}
+<article>
+  <h1 style="font-size:1.8rem;margin-bottom:8px">{$post.title}</h1>
+  <div class="post-meta">{$post.create_time} &bull; {$post.category.name|default='未分类'} &bull; 阅读 {$post.view_count}</div>
+  {if $post.tags}
+  <div style="margin:8px 0">
+    {volist name="post.tags" id="t"}<a href="/blog/tag/{$t.slug}" style="background:#e8f5ee;color:#2c7a4b;padding:2px 8px;border-radius:12px;font-size:.8rem;margin-right:4px">#{$t.name}</a>{/volist}
+  </div>
+  {/if}
+  <div style="margin-top:24px;line-height:2;font-size:1rem">{$post.content|raw}</div>
+</article>
+<hr style="margin:40px 0;border-color:#e8e4df">
+<section>
+  <h3 style="margin-bottom:16px">评论 ({$post.comment_count})</h3>
+  {volist name="comments" id="c"}
+  <div style="background:#fff;border:1px solid #e8e4df;border-radius:6px;padding:14px;margin-bottom:12px">
+    <strong>{$c.nickname}</strong> <span style="color:#aaa;font-size:.8rem">{$c.create_time}</span>
+    <p style="margin-top:6px">{$c.content}</p>
+  </div>
+  {/volist}
+  {if empty($comments)}<p style="color:#aaa">暂无评论，快来抢沙发吧！</p>{/if}
+  {:get_config('blog.comment_enable') ? '' : ''}
+  <div style="margin-top:24px;background:#fff;border:1px solid #e8e4df;border-radius:6px;padding:20px">
+    <h4 style="margin-bottom:14px">发表评论</h4>
+    <form id="commentForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <input name="nickname" placeholder="昵称 *" required style="padding:8px;border:1px solid #ddd;border-radius:4px">
+        <input name="email" placeholder="邮箱（可选）" style="padding:8px;border:1px solid #ddd;border-radius:4px">
+      </div>
+      <textarea name="content" placeholder="说点什么..." required rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:10px"></textarea>
+      <button type="submit" style="background:#2c7a4b;color:#fff;border:0;padding:8px 20px;border-radius:4px;cursor:pointer">提交评论</button>
+      <span id="commentMsg" style="margin-left:10px;font-size:.85rem"></span>
+    </form>
+  </div>
+</section>
+<script>
+document.getElementById('commentForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  const fd=new FormData(this);
+  fetch('/blog/post/{$post.slug}/comment',{method:'POST',body:new URLSearchParams(fd)})
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('commentMsg').textContent=d.msg;
+      if(d.code==0) this.reset();
+    }.bind(this));
+});
+</script>
+{/block}
