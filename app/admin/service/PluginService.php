@@ -88,6 +88,7 @@ class PluginService
         }
 
         $plugin->save(['installed' => 1, 'status' => 1]);
+        \Webman\Event\Event::emit('plugin.installed', $identifier);
         return true;
     }
 
@@ -104,6 +105,7 @@ class PluginService
         Rule::where('plugin', $identifier)->update(['status' => 0]);
         ConfigGroupModel::where('plugin', $identifier)->update(['status' => 0]);
         ConfigModel::where('plugin', $identifier)->update(['status' => 0]);
+        \Webman\Event\Event::emit('plugin.disabled', $identifier);
         return true;
     }
 
@@ -123,6 +125,7 @@ class PluginService
         Rule::where('plugin', $identifier)->update(['status' => 1]);
         ConfigGroupModel::where('plugin', $identifier)->update(['status' => 1]);
         ConfigModel::where('plugin', $identifier)->update(['status' => 1]);
+        \Webman\Event\Event::emit('plugin.enabled', $identifier);
         return true;
     }
 
@@ -140,6 +143,7 @@ class PluginService
         Rule::where('plugin', $identifier)->delete();
         ConfigGroupModel::where('plugin', $identifier)->update(['status' => 0]);
         ConfigModel::where('plugin', $identifier)->update(['status' => 0]);
+        \Webman\Event\Event::emit('plugin.uninstalled', $identifier);
         return true;
     }
 

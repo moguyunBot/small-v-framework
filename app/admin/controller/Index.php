@@ -197,9 +197,11 @@ class Index extends Base{
                 }
                 AdminLoginLog::record($this->post['username'], $admin['id'], 1, '登录成功');
                 $session->set('admin',$admin->toArray());
+                \Webman\Event\Event::emit('admin.login.success', $admin->toArray());
             }catch(\Exception $e){
                 $username = $this->post['username'] ?? '';
                 AdminLoginLog::record($username, 0, 0, $e->getMessage());
+                \Webman\Event\Event::emit('admin.login.fail', ['username' => $username, 'reason' => $e->getMessage()]);
                 $this->captcha();
                 return error($e->getMessage()?:'登录失败');
             }
