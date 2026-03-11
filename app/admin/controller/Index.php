@@ -4,6 +4,7 @@ namespace app\admin\controller;
 use Webman\Captcha\CaptchaBuilder;
 use Webman\Captcha\PhraseBuilder;
 use app\admin\model\Admin;
+use app\admin\model\AdminLoginLog;
 
 /**
  * 后台首页控制器
@@ -28,12 +29,7 @@ class Index extends Base{
     public function getSystemData()
     {
         $data = $this->getSystemMonitorData();
-        
-        if ($this->isPost()) {
-            return json(['code' => 0, 'data' => $data]);
-        }
-        
-        return $data;
+        return json(['code' => 0, 'data' => $data]);
     }
     
     /**
@@ -200,8 +196,11 @@ class Index extends Base{
                 if($admin['status']!=1){
                     throw new \Exception('该管理员已禁用');
                 }
+                AdminLoginLog::record($this->post['username'], $admin['id'], 1, '登录成功');
                 $session->set('admin',$admin->toArray());
             }catch(\Exception $e){
+                $username = $this->post['username'] ?? '';
+                AdminLoginLog::record($username, 0, 0, $e->getMessage());
                 $this->captcha();
                 return error($e->getMessage()?:'登录失败');
             }

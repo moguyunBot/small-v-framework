@@ -30,7 +30,7 @@ class Rule extends Base{
      * @param int $level 层级
      * @return array
      */
-    public function recursion_title($list, $pid = 0, $level = 0)
+    protected function recursion_title($list, $pid = 0, $level = 0)
     {
         $arr = [];
         foreach ($list as $v) {

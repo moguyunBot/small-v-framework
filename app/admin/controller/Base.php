@@ -2,6 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\{Role, Rule};
+use app\admin\model\AdminOpLog;
 use support\View;
 use Webman\Http\Response;
 
@@ -46,6 +47,11 @@ class Base
 
         $this->loadModel();
         $this->generateMenu();
+
+        // 记录 POST 操作日志
+        if ($request->method() === 'POST') {
+            AdminOpLog::record();
+        }
     }
 
     /**

@@ -245,9 +245,7 @@ createVueApp({
   methods: {
     async loadSystemData() {
       try {
-        const res = await fetch('/admin/index/getSystemData', {
-          method: 'POST'
-        }).then(r => r.json());
+        const res = await fetch('/admin/index/getSystemData').then(r => r.json());
         
         if (res.code === 0) {
           this.systemData = res.data;
