@@ -26,6 +26,9 @@ Thumbs.db
 # 上传文件
 /public/uploads/
 
+# 插件目录（各插件独立管理）
+/plugin/
+
 
 # 临时文件
 *.tmp

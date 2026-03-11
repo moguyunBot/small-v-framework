@@ -1,2 +1,0 @@
--- user 插件升级 SQL 示例
--- ALTER TABLE user_members ADD COLUMN IF NOT EXISTS `last_login_at` int(11) NOT NULL DEFAULT '0' COMMENT '最后登录时间' AFTER `status`;
