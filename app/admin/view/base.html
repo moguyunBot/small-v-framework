@@ -393,12 +393,7 @@ ul.pagination li:last-child span {
                   <span>修改密码</span>
                 </a>
               </li>
-              <li>
-                <a class="dropdown-item" href="javascript:void(0)" onclick="clearCache()">
-                  <i class="mdi mdi-delete-sweep"></i>
-                  <span>清除缓存</span>
-                </a>
-              </li>
+
               <li class="dropdown-divider"></li>
               <li>
                 <a class="dropdown-item" href="/admin/index/login">
@@ -489,34 +484,6 @@ ul.pagination li:last-child span {
       });
   }
   
-  // 清除缓存
-  function clearCache() {
-      Swal.fire({
-          title: 'warning',
-          type: 'warning',
-          html: '确定要清除所有缓存吗？',
-          showCancelButton: true,
-          allowOutsideClick: false,
-          confirmButtonText: 'OK',
-          cancelButtonText: 'cancel'
-      }).then(function (isConfirm) {
-          if (isConfirm.value === true) {
-              let ll = layer.load();
-              $.post('/admin/dev/cache', {action: 'clear_all'}, res => {
-                  layer.close(ll);
-                  Swal.fire({
-                      title: res.code == 1 ? 'success' : 'error',
-                      type: res.code == 1 ? 'success' : 'error',
-                      html: res.msg,
-                      allowOutsideClick: false,
-                      customClass: {
-                        confirmButton: 'btn' + (res.code == 1 ? ' btn-primary' : ' btn-danger')
-                      }
-                  });
-              });
-          }
-      });
-  }
 </script>
 </body>
 </html>
