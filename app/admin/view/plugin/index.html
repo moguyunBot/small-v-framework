@@ -233,7 +233,7 @@ const _app = createVueApp({
         },
         openConfigManage(identifier, name) {
             document.getElementById('pluginModalTitle').textContent = name + ' · 配置项管理';
-            document.getElementById('pluginModalIframe').src = '/admin/dev/configManage?group=' + identifier + '&plugin=' + identifier + '&iframe=1';
+            document.getElementById('pluginModalIframe').src = '/admin/config/configManage?group=' + identifier + '&plugin=' + identifier + '&iframe=1';
             new bootstrap.Modal(document.getElementById('pluginModal')).show();
         },
         openPluginSetting(identifier, name) {

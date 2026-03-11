@@ -36,72 +36,39 @@ class Rule extends \think\Model
      * @param int $pid 父级ID
      * @return array
      */
-    public static function recursion($list, $pid = 0)
-    {
-        $request = request();
-        $controller = class_basename($request->controller);
-        $action = $request->action;
-        
-        $arr = [];
-        foreach ($list as $v) {
-            if ($v['pid'] == $pid) {
-                if ('/admin/'.$controller.'/'.$action==$v['href']) {
-                    if(!empty($v['options'][0]['key'])&&!empty($v['options'][0]['value'])){
-                        $param = [];
-                        foreach($v['options'] as $v1){
-                            $param[$v1['key']] = $v1['value'];
-                        }
-                        //对比交集
-                        $arr1 = array_intersect($param,request()->get());
-                        //必须有交集//并且没有差集才是选中状态
-                        if(count($arr1)&&count(array_diff($arr1,$param))==0){
-                            $v['active'] = 'active';
-                        }else{
-                            $v['active'] = '';
-                        }
-                    }else{
-                        $v['active'] = 'active';
-                    }
-                } else {
-                    $v['active'] = '';
-                }
-                $v['son'] = self::recursion($list, $v['id']);
-                $actives = array_column($v['son'], 'active');
-                if (in_array('active', $actives)) {
-                    $v['active'] = 'active';
-                }
-                $arr[] = $v;
-            }
-        }
-        
-        return $arr;
-    }
-    
-    /**
-     * 递归生成菜单HTML
-     * @param array $list 规则列表
-     * @return string
-     */
-    public static function recursion_menu($list)
+    public static function recursion($list, $pid = 0, $currentPath = '')
     {
         $html = '';
         foreach ($list as $v) {
-            $actives = array_column($v['son'], 'active');
-            if (in_array('active', $actives)) {
-                $v['active'] = 'active';
-            }
-            $v['son'] = array_filter($v['son'], function ($rule) {
-                if ($rule['is_menu']==1) {
-                    return $rule;
+            if ($v['pid'] != $pid) continue;
+            if ($v['is_menu'] == 0) continue;
+
+            // 判断当前菜单是否 active
+            $matched = $currentPath && strcasecmp($currentPath, $v['href']) === 0;
+            if ($matched) {
+                if (!empty($v['options'][0]['key']) && !empty($v['options'][0]['value'])) {
+                    $param = array_column($v['options'], 'value', 'key');
+                    $arr1  = array_intersect($param, request()->get());
+                    $v['active'] = (count($arr1) && count(array_diff($arr1, $param)) == 0) ? 'active' : '';
+                } else {
+                    $v['active'] = 'active';
                 }
-            });
-            if($v['is_menu']==0)continue;
-            if (count($v['son']) == 0) {
-                $html .= '<li class="nav-item '.($v['active']?:'').'"> <a href="'.$v['href'].'"><i class="'.$v['icon'].'"></i> <span>'.$v['title'].'</span></a> </li>';
             } else {
-                $html .= '<li class="nav-item nav-item-has-subnav '.($v['active']?'active open':'').'"><a href="javascript:void(0)"><i class="'.($v['icon']?:'iconfont icon-xitongshezhi').'"></i> <span>'.$v['title'].'</span></a><ul class="nav nav-subnav">'.static::recursion_menu($v['son']).'</ul></li>';
+                $v['active'] = '';
+            }
+
+            // 递归生成子菜单 HTML
+            $sonHtml = self::recursion($list, $v['id'], $currentPath);
+
+            if ($sonHtml === '') {
+                $html .= '<li class="nav-item ' . $v['active'] . '"><a href="' . $v['href'] . '"><i class="' . $v['icon'] . '"></i> <span>' . $v['title'] . '</span></a></li>';
+            } else {
+                $isOpen = str_contains($sonHtml, 'active') ? 'active open' : '';
+                $icon   = $v['icon'] ?: 'iconfont icon-xitongshezhi';
+                $html  .= '<li class="nav-item nav-item-has-subnav ' . $isOpen . '"><a href="javascript:void(0)"><i class="' . $icon . '"></i> <span>' . $v['title'] . '</span></a><ul class="nav nav-subnav">' . $sonHtml . '</ul></li>';
             }
         }
+
         return $html;
     }
     

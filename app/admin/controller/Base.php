@@ -53,7 +53,6 @@ class Base
      */
     protected function loadModel(): void
     {
-        if (!$this->controller) return;
         $controllerClass = str_replace('controller', 'model', $this->controller);
         if (class_exists($controllerClass)) {
             $this->model = new $controllerClass();
@@ -67,20 +66,20 @@ class Base
      */
     protected function generateMenu(): void
     {
-        $plugin = '';
-        if (str_starts_with($this->controller ?? '', 'plugin\\')) {
-            preg_match('/^plugin\\\\([^\\\\]+)/', $this->controller, $m);
-            $plugin = $m[1] ?? '';
-        }
+        $request     = request();
+        $controller  = class_basename($request->controller ?? '');
+        $action      = $request->action ?? '';
+        $plugin      = $request->plugin ?? '';
+        $currentPath = $plugin
+            ? '/app/' . $plugin . '/admin/' . $controller . '/' . $action
+            : '/admin/' . $controller . '/' . $action;
 
         $rules = Rule::where('plugin', $plugin)
             ->where('status', 1)
             ->order('sort asc, id asc')
             ->select()->toArray();
 
-        $trees = Rule::recursion($rules);
-        $html  = Rule::recursion_menu($trees);
-
+        $html = Rule::recursion($rules, 0, $currentPath);
         View::assign('menu_html', $html);
     }
 
