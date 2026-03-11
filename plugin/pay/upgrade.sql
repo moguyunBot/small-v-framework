@@ -1,0 +1,2 @@
+-- pay 插件升级 SQL 示例
+-- ALTER TABLE pay_orders ADD COLUMN IF NOT EXISTS `refund_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '退款金额' AFTER `paid_at`;

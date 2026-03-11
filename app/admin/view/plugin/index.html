@@ -11,7 +11,7 @@
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0,0,0,.07);
     border: 1px solid #c8d0e0;
-    overflow: hidden;
+    overflow: visible;
     transition: box-shadow .2s, transform .2s;
     display: flex;
     flex-direction: column;
@@ -73,7 +73,7 @@
               <div class="plugin-icon"><i class="{$p.icon}"></i></div>
               <div class="plugin-meta">
                 <div class="plugin-name">{$p.name}</div>
-                <div class="plugin-version">v{$p.version} &nbsp;·&nbsp; {$p.author}</div>
+                <div class="plugin-version">v{$p.version}{if $p.upgradable} <span class="badge bg-warning text-dark ms-1">可升级 v{$p.file_version}</span>{/if} &nbsp;·&nbsp; {$p.author}</div>
               </div>
               {if $p.installed == 1 && $p.status == 1}
               <span class="plugin-badge badge-active">已启用</span>
@@ -104,6 +104,8 @@
                     <li><button class="dropdown-item" onclick="openConfigManage('{$p.identifier}','{$p.name}')"><i class="mdi mdi-tune me-1"></i> 配置项管理</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item text-warning" onclick="pluginAction('disable','{$p.identifier}')"><i class="mdi mdi-pause me-1"></i> 停用</button></li>
+                    {if $p.upgradable}<li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item text-success" onclick="pluginAction('upgrade','{$p.identifier}')"><i class="mdi mdi-arrow-up-circle me-1"></i> 升级到 v{$p.file_version}</button></li>{/if}
                   </ul>
                 </div>
                 {/if}
@@ -246,6 +248,7 @@ const _app = createVueApp({
                 uninstall: '确定要卸载吗？数据将保留，可重新安装恢复。',
                 enable:    '确定要启用该插件吗？',
                 disable:   '确定要停用该插件吗？后台菜单将立即隐藏。',
+                upgrade:   '确定要升级该插件吗？升级前建议备份数据库。',
             };
             this.confirm(msgs[action], () => {
                 this.post('/admin/plugin/' + action, { identifier }, res => {

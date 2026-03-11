@@ -6,7 +6,7 @@ return [
     'enable'             => true,
     'identifier'         => 'blog',
     'name'               => '博客系统',
-    'version'            => '1.0.0',
+    'version'            => '1.0.1',
     'author'             => 'System',
     'description'        => '功能完整的博客系统，包含文章、分类、标签、评论管理',
     'icon'               => 'mdi mdi-post',

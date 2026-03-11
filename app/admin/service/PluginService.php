@@ -257,27 +257,91 @@ class PluginService
     /**
      * 执行插件的 install.sql（仅首次安装）
      */
-    protected function runInstallSql(string $identifier): void
+    /**
+     * 升级插件
+     * 对比 config/app.php 中的版本与数据库版本，有差异时执行 upgrade.sql 并补充新配置项
+     */
+    public function upgrade(string $identifier): bool
     {
-        $sqlFile = base_path("plugin/{$identifier}/install.sql");
-        if (!file_exists($sqlFile)) {
-            return;
+        $plugin = PluginModel::findByIdentifier($identifier);
+        if (!$plugin) {
+            throw new \Exception('插件不存在');
+        }
+        if (!$plugin->installed) {
+            throw new \Exception('请先安装插件');
         }
 
+        $appFile = base_path("plugin/{$identifier}/config/app.php");
+        if (!file_exists($appFile)) {
+            throw new \Exception('插件配置文件不存在');
+        }
+        $appConfig  = require $appFile;
+        $newVersion = $appConfig['version'] ?? '1.0.0';
+        $oldVersion = $plugin->version;
+
+        if (version_compare($newVersion, $oldVersion, '<=')) {
+            throw new \Exception('当前已是最新版本（' . $oldVersion . '）');
+        }
+
+        // 执行升级 SQL（upgrade.sql，不存在则跳过）
+        $this->runUpgradeSql($identifier, $oldVersion, $newVersion);
+
+        // 补充新增的配置项（已有的不覆盖）
+        $this->importConfigs($identifier);
+
+        // 更新数据库版本号
+        $plugin->save(['version' => $newVersion]);
+
+        \Webman\Event\Event::emit('plugin.upgraded', [
+            'identifier'  => $identifier,
+            'old_version' => $oldVersion,
+            'new_version' => $newVersion,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * 执行升级 SQL
+     * 支持两种文件：
+     *   upgrade.sql          — 每次升级都执行
+     *   upgrade_{ver}.sql    — 只在升级到指定版本时执行（如 upgrade_1.1.0.sql）
+     */
+    protected function runUpgradeSql(string $identifier, string $oldVersion, string $newVersion): void
+    {
+        $dir = base_path("plugin/{$identifier}");
+
+        // 执行通用 upgrade.sql
+        $sqlFile = $dir . '/upgrade.sql';
+        if (file_exists($sqlFile)) {
+            $this->executeSqlFile($sqlFile);
+        }
+
+        // 执行版本专属 upgrade_{ver}.sql
+        $versionSql = $dir . '/upgrade_' . $newVersion . '.sql';
+        if (file_exists($versionSql)) {
+            $this->executeSqlFile($versionSql);
+        }
+    }
+
+    protected function executeSqlFile(string $sqlFile): void
+    {
         $sql = file_get_contents($sqlFile);
-        if (empty(trim($sql))) {
-            return;
-        }
-
-        // 按分号拆分多条语句逐条执行
+        if (empty(trim($sql))) return;
         $statements = array_filter(
             array_map('trim', explode(';', $sql)),
             fn($s) => $s !== ''
         );
-
         foreach ($statements as $statement) {
             \think\facade\Db::execute($statement);
         }
+    }
+
+    protected function runInstallSql(string $identifier): void
+    {
+        $sqlFile = base_path("plugin/{$identifier}/install.sql");
+        if (!file_exists($sqlFile)) return;
+        $this->executeSqlFile($sqlFile);
     }
 
     /**

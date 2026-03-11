@@ -53,6 +53,15 @@ class Plugin extends Base
                 $entry = is_array($menu) ? $findFirstHref($menu) : '';
             }
             $p['admin_entry'] = $entry;
+
+            // 对比文件版本与数据库版本，判断是否可升级
+            $fileVersion = '';
+            if (file_exists($appFile)) {
+                $cfg = (function($f) { return include $f; })($appFile);
+                $fileVersion = is_array($cfg) ? ($cfg['version'] ?? '') : '';
+            }
+            $p['upgradable'] = $p['installed'] == 1 && $fileVersion && version_compare($fileVersion, $p['version'], '>');
+            $p['file_version'] = $fileVersion;
         }
         unset($p);
 
@@ -130,6 +139,21 @@ class Plugin extends Base
     /**
      * 删除插件（物理删除）
      */
+    /**
+     * 升级插件
+     */
+    public function upgrade()
+    {
+        if (!$this->isPost()) return error('非法请求');
+        $identifier = $this->post['identifier'] ?? '';
+        try {
+            $this->service->upgrade($identifier);
+        } catch (\Exception $e) {
+            return error($e->getMessage());
+        }
+        return success('升级成功');
+    }
+
     /**
      * 上传插件 ZIP 包
      */
