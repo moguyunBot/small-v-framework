@@ -44,56 +44,30 @@ class Config extends Base
                             unset($this->post[$k]['config'][$kk]);
                             continue;
                         }
-                        
-                        // 处理单图上传
-                        if ($vv['type'] == 'image') {
+
+                        $type = $vv['type'];
+
+                        // 单文件上传（image / video）
+                        if (in_array($type, ['image', 'video'])) {
                             $file = $this->request->file($k)['config'][$kk]['value'] ?? null;
                             if ($file) {
                                 $this->post[$k]['config'][$kk]['value'] = upload($file);
                             }
                         }
-                        // 处理多图上传
-                        else if ($vv['type'] == 'images') {
+                        // 多文件上传（images / videos）
+                        elseif (in_array($type, ['images', 'videos'])) {
                             $files = $this->request->file($k)['config'][$kk]['value'] ?? null;
                             if ($files && is_array($files)) {
-                                $value = [];
-                                foreach ($files as $file) {
-                                    if ($file) {
-                                        $value[] = upload($file);
-                                    }
-                                }
+                                $value = array_filter(array_map(fn($f) => $f ? upload($f) : null, $files));
                                 if (!empty($value)) {
-                                    $this->post[$k]['config'][$kk]['value'] = $value;
+                                    $this->post[$k]['config'][$kk]['value'] = array_values($value);
                                 }
                             }
                         }
-                        // 处理单视频上传
-                        else if ($vv['type'] == 'video') {
-                            $file = $this->request->file($k)['config'][$kk]['value'] ?? null;
-                            if ($file) {
-                                $this->post[$k]['config'][$kk]['value'] = upload($file);
-                            }
-                        }
-                        // 处理多视频上传
-                        else if ($vv['type'] == 'videos') {
-                            $files = $this->request->file($k)['config'][$kk]['value'] ?? null;
-                            if ($files && is_array($files)) {
-                                $value = [];
-                                foreach ($files as $file) {
-                                    if ($file) {
-                                        $value[] = upload($file);
-                                    }
-                                }
-                                if (!empty($value)) {
-                                    $this->post[$k]['config'][$kk]['value'] = $value;
-                                }
-                            }
-                        }
-                        // 处理富文本编辑器
-                        else if ($vv['type'] == 'editor') {
+                        // 富文本编辑器
+                        elseif ($type === 'editor') {
                             if (!empty($vv['value'])) {
-                                $vv['value'] = $this->downloadRemoteMedia($vv['value']);
-                                $this->post[$k]['config'][$kk]['value'] = $vv['value'];
+                                $this->post[$k]['config'][$kk]['value'] = $this->downloadRemoteMedia($vv['value']);
                             }
                         }
                     }

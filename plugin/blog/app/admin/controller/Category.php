@@ -3,21 +3,20 @@ namespace plugin\blog\app\admin\controller;
 
 use app\admin\controller\Base;
 use plugin\blog\app\model\Category as CategoryModel;
-use support\Request;
 
 class Category extends Base
 {
-    public function index(Request $request)
+    public function index()
     {
         $categories = CategoryModel::order('sort asc, id asc')->select();
-        return $this->view( ['categories' => $categories]);
+        return $this->view(['categories' => $categories]);
     }
 
-    public function add(Request $request)
+    public function add()
     {
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $data = $request->post();
+                $data = $this->post;
                 if (empty($data['name'])) throw new \Exception('分类名称不能为空');
                 $data['slug'] = CategoryModel::makeSlug($data['name']);
                 CategoryModel::create($data);
@@ -29,12 +28,12 @@ class Category extends Base
         return $this->view();
     }
 
-    public function edit(Request $request)
+    public function edit()
     {
-        $category = CategoryModel::find($request->get('id'));
-        if ($request->isPost()) {
+        $category = CategoryModel::find($this->get['id']);
+        if ($this->isPost()) {
             try {
-                $data = $request->post();
+                $data = $this->post;
                 unset($data['id']);
                 $category->save($data);
                 return success('保存成功', 'index');
@@ -42,14 +41,14 @@ class Category extends Base
                 return error($e->getMessage() ?: '保存失败');
             }
         }
-        return $this->view( ['category' => $category]);
+        return $this->view(['category' => $category]);
     }
 
-    public function del(Request $request)
+    public function del()
     {
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $category = CategoryModel::find($request->post('id'));
+                $category = CategoryModel::find($this->post['id']);
                 if (!$category) throw new \Exception('分类不存在');
                 if ($category->post_count > 0) throw new \Exception('该分类下还有文章，请先移除文章');
                 $category->delete();

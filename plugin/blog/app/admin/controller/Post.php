@@ -5,32 +5,31 @@ use app\admin\controller\Base;
 use plugin\blog\app\model\Post as PostModel;
 use plugin\blog\app\model\Category;
 use plugin\blog\app\model\Tag;
-use support\Request;
 
 class Post extends Base
 {
-    public function index(Request $request)
+    public function index()
     {
-        $page    = (int)$request->get('page', 1);
-        $keyword = trim($request->get('keyword', ''));
-        $status  = $request->get('status', '');
+        $page    = (int)($this->get['page'] ?? 1);
+        $keyword = trim($this->get['keyword'] ?? '');
+        $status  = $this->get['status'] ?? '';
 
         $query = PostModel::with(['category'])->order('is_top desc, create_time desc');
         if ($keyword) $query->whereLike('title', "%{$keyword}%");
         if ($status !== '') $query->where('status', (int)$status);
 
         $posts = $query->paginate(['list_rows' => 15, 'page' => $page]);
-        return $this->view( ['posts' => $posts, 'keyword' => $keyword, 'status' => $status]);
+        return $this->view(['posts' => $posts, 'keyword' => $keyword, 'status' => $status]);
     }
 
-    public function add(Request $request)
+    public function add()
     {
         $categories = Category::order('sort asc, id asc')->select();
         $tags       = Tag::order('name asc')->select();
 
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $data = $request->post();
+                $data           = $this->post;
                 $data['slug']   = PostModel::makeSlug($data['title']);
                 $data['status'] = (int)($data['status'] ?? 1);
                 $data['is_top'] = (int)($data['is_top'] ?? 0);
@@ -49,41 +48,43 @@ class Post extends Base
                 return error($e->getMessage() ?: '发布失败');
             }
         }
-        return $this->view( ['categories' => $categories, 'tags' => $tags]);
+        return $this->view(['categories' => $categories, 'tags' => $tags]);
     }
 
-    public function edit(Request $request)
+    public function edit()
     {
-        $post       = PostModel::with(['tags'])->find($request->get('id'));
+        $post       = PostModel::with(['tags'])->find($this->get['id']);
         $categories = Category::order('sort asc, id asc')->select();
         $tags       = Tag::order('name asc')->select();
         $postTagIds = array_column($post->tags->toArray(), 'id');
 
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $data = $request->post();
+                $data           = $this->post;
                 $data['status'] = (int)($data['status'] ?? 1);
                 $data['is_top'] = (int)($data['is_top'] ?? 0);
                 $tagIds = $data['tag_ids'] ?? [];
                 unset($data['tag_ids'], $data['id']);
                 $post->save($data);
                 $post->tags()->sync($tagIds);
-                Tag::all()->each(function($t) {
-                    $t->save(['post_count' => \think\facade\Db::table('blog_post_tags')->where('tag_id', $t->id)->count()]);
-                });
+                // 只更新受影响的 tag 计数，避免全表扫描
+                $allAffectedIds = array_unique(array_merge($postTagIds, $tagIds));
+                foreach ($allAffectedIds as $tid) {
+                    Tag::where('id', $tid)->save(['post_count' => \think\facade\Db::table('blog_post_tags')->where('tag_id', $tid)->count()]);
+                }
                 return success('保存成功', 'index');
             } catch (\Exception $e) {
                 return error($e->getMessage() ?: '保存失败');
             }
         }
-        return $this->view( ['post' => $post, 'categories' => $categories, 'tags' => $tags, 'postTagIds' => $postTagIds]);
+        return $this->view(['post' => $post, 'categories' => $categories, 'tags' => $tags, 'postTagIds' => $postTagIds]);
     }
 
-    public function del(Request $request)
+    public function del()
     {
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $post = PostModel::find($request->post('id'));
+                $post = PostModel::find($this->post['id']);
                 if (!$post) throw new \Exception('文章不存在');
                 $post->tags()->detach();
                 $post->delete();

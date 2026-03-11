@@ -3,21 +3,20 @@ namespace plugin\blog\app\admin\controller;
 
 use app\admin\controller\Base;
 use plugin\blog\app\model\Tag as TagModel;
-use support\Request;
 
 class Tag extends Base
 {
-    public function index(Request $request)
+    public function index()
     {
         $tags = TagModel::order('post_count desc, id asc')->select();
-        return $this->view( ['tags' => $tags]);
+        return $this->view(['tags' => $tags]);
     }
 
-    public function add(Request $request)
+    public function add()
     {
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $name = trim($request->post('name', ''));
+                $name = trim($this->post['name'] ?? '');
                 if (!$name) throw new \Exception('标签名称不能为空');
                 TagModel::create(['name' => $name, 'slug' => TagModel::makeSlug($name)]);
                 return success('添加成功', 'index');
@@ -28,12 +27,12 @@ class Tag extends Base
         return $this->view();
     }
 
-    public function edit(Request $request)
+    public function edit()
     {
-        $tag = TagModel::find($request->get('id'));
-        if ($request->isPost()) {
+        $tag = TagModel::find($this->get['id']);
+        if ($this->isPost()) {
             try {
-                $data = $request->post();
+                $data = $this->post;
                 unset($data['id']);
                 $tag->save($data);
                 return success('保存成功', 'index');
@@ -41,14 +40,14 @@ class Tag extends Base
                 return error($e->getMessage() ?: '保存失败');
             }
         }
-        return $this->view( ['tag' => $tag]);
+        return $this->view(['tag' => $tag]);
     }
 
-    public function del(Request $request)
+    public function del()
     {
-        if ($request->isPost()) {
+        if ($this->isPost()) {
             try {
-                $tag = TagModel::find($request->post('id'));
+                $tag = TagModel::find($this->post['id']);
                 if (!$tag) throw new \Exception('标签不存在');
                 \think\facade\Db::table('blog_post_tags')->where('tag_id', $tag->id)->delete();
                 $tag->delete();

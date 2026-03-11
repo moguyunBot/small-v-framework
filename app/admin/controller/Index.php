@@ -17,9 +17,8 @@ class Index extends Base{
      * @return \Webman\Http\Response
      */
     public function index(){
-        // 获取系统监控数据
-        $systemData = $this->getSystemData();
-        return $this->view( ['systemData' => $systemData]);
+        $systemData = $this->getSystemMonitorData();
+        return $this->view(['systemData' => $systemData]);
     }
     
     /**

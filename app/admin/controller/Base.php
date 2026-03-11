@@ -21,6 +21,20 @@ class Base
     public $controller;
     public $action;
 
+    /**
+     * 判断当前管理员是否为超级管理员
+     */
+    protected function isSuperAdmin(): bool
+    {
+        $admin = admin();
+        if (!$admin || empty($admin['roles'])) return false;
+        $roles = Role::whereIn('id', $admin['roles'])->column('rules');
+        foreach ($roles as $rules) {
+            if ($rules === '*' || in_array('*', explode(',', $rules))) return true;
+        }
+        return false;
+    }
+
     public function __construct()
     {
         $this->request    = $request = request();
@@ -30,20 +44,7 @@ class Base
         $this->action     = $request->action;
 
         View::assign('iframe', !empty($this->get['iframe']) ? 1 : 0);
-
-        // 注入超级管理员标识
-        $admin        = admin();
-        $isSuperAdmin = false;
-        if ($admin && !empty($admin['roles'])) {
-            $roles = Role::whereIn('id', $admin['roles'])->column('rules');
-            foreach ($roles as $rules) {
-                if ($rules === '*' || in_array('*', explode(',', $rules))) {
-                    $isSuperAdmin = true;
-                    break;
-                }
-            }
-        }
-        View::assign('isSuperAdmin', $isSuperAdmin);
+        View::assign('isSuperAdmin', $this->isSuperAdmin());
 
         $this->loadModel();
         $this->generateMenu();
@@ -80,31 +81,27 @@ class Base
             ? '/app/' . $plugin . '/admin/' . $controller . '/' . $action
             : '/admin/' . $controller . '/' . $action;
 
-        // 获取当前管理员有权限的规则 ID
-        $admin   = admin();
-        $ruleIds = [];
-        $isSuperAdmin = false;
-        if ($admin && !empty($admin['roles'])) {
-            $roleRules = Role::whereIn('id', $admin['roles'])->column('rules');
-            foreach ($roleRules as $str) {
-                if ($str === '*' || in_array('*', explode(',', $str))) {
-                    $isSuperAdmin = true;
-                    break;
-                }
-                if (!empty($str)) {
-                    array_push($ruleIds, ...explode(',', $str));
+        $isSuperAdmin = $this->isSuperAdmin();
+        $ruleIds      = [];
+
+        if (!$isSuperAdmin) {
+            $admin = admin();
+            if ($admin && !empty($admin['roles'])) {
+                $roleRules = Role::whereIn('id', $admin['roles'])->column('rules');
+                foreach ($roleRules as $str) {
+                    if (!empty($str)) {
+                        array_push($ruleIds, ...explode(',', $str));
+                    }
                 }
             }
-        }
-
-        $query = Rule::where('plugin', $plugin)->where('status', 1)->order('sort asc, id asc');
-
-        // 非超级管理员只查有权限的节点
-        if (!$isSuperAdmin) {
             if (empty($ruleIds)) {
                 View::assign('menu_html', '');
                 return;
             }
+        }
+
+        $query = Rule::where('plugin', $plugin)->where('status', 1)->order('sort asc, id asc');
+        if (!$isSuperAdmin) {
             $query = $query->whereIn('id', array_unique($ruleIds));
         }
 
@@ -118,16 +115,7 @@ class Base
      */
     protected function checkSuperAdmin(): ?Response
     {
-        $admin = admin();
-        if (!$admin || empty($admin['roles'])) {
-            return error('无权限，仅超级管理员可执行此操作');
-        }
-        $roles = Role::whereIn('id', $admin['roles'])->column('rules');
-        foreach ($roles as $rules) {
-            if ($rules === '*' || in_array('*', explode(',', $rules))) {
-                return null;
-            }
-        }
+        if ($this->isSuperAdmin()) return null;
         return error('无权限，仅超级管理员可执行此操作');
     }
 

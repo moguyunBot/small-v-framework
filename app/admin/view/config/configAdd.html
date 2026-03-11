@@ -75,7 +75,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="mdi mdi-check"></i> 提交
                 </button>
-                <a href="manage?group={$group.group_key}" class="btn btn-secondary">
+                <a href="configManage?group={$group.group_key}{if $pluginId}&plugin={$pluginId}{/if}{if $iframe}&iframe=1{/if}" class="btn btn-secondary">
                     <i class="mdi mdi-arrow-left"></i> 返回
                 </a>
             </div>
