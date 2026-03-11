@@ -137,17 +137,4 @@ class Base
         return view($template, $vars);
     }
 
-    /**
-     * 获取角色权限规则列表
-     */
-    protected function getRules(array $roles): array
-    {
-        $rules_strings = $roles ? Role::whereIn('id', $roles)->column('rules') : [];
-        $rules = [];
-        foreach ($rules_strings as $rule_string) {
-            if (!$rule_string) continue;
-            $rules = array_merge($rules, explode(',', $rule_string));
-        }
-        return $rules;
-    }
 }

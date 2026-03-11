@@ -2,6 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Config as ConfigModel;
+use app\admin\model\ConfigGroup as ConfigGroupModel;
 
 /**
  * 系统配置控制器
@@ -291,36 +292,213 @@ class Config extends Base
     }
     
     /**
-     * 下载文件到临时目录
-     * @param string $url 文件 URL
-     * @return string|false 临时文件路径
+     * 配置分组列表
      */
-    protected function downloadFile(string $url)
+    public function groupIndex()
     {
+        $list = ConfigGroupModel::order('sort asc, id desc')->paginate(20);
+        return $this->view('config/configgroup/index', ['list' => $list]);
+    }
+
+    /**
+     * 添加配置分组
+     */
+    public function groupAdd()
+    {
+        if ($this->isPost()) {
+            try {
+                validate([
+                    'group_key|分组标识'   => 'require',
+                    'group_title|分组标题' => 'require',
+                ])->check($this->post);
+                $exists = ConfigGroupModel::where('group_key', $this->post['group_key'])->find();
+                if ($exists) throw new \Exception('分组标识已存在');
+                ConfigGroupModel::create($this->post);
+            } catch (\Exception $e) {
+                return error($e->getMessage() ?: '添加失败');
+            }
+            return success('添加成功', 'groupIndex');
+        }
+        return $this->view('config/configgroup/add');
+    }
+
+    /**
+     * 编辑配置分组
+     */
+    public function groupEdit()
+    {
+        $id    = $this->get['id'] ?? 0;
+        $group = ConfigGroupModel::find($id);
+        if (!$group) return error('分组不存在');
+
+        if ($this->isPost()) {
+            try {
+                validate([
+                    'group_key|分组标识'   => 'require',
+                    'group_title|分组标题' => 'require',
+                ])->check($this->post);
+                $exists = ConfigGroupModel::where('group_key', $this->post['group_key'])
+                    ->where('id', '<>', $id)->find();
+                if ($exists) throw new \Exception('分组标识已存在');
+                $group->save($this->post);
+            } catch (\Exception $e) {
+                return error($e->getMessage() ?: '编辑失败');
+            }
+            return success('编辑成功', 'groupIndex');
+        }
+        return $this->view('config/configgroup/edit', ['group' => $group]);
+    }
+
+    /**
+     * 删除配置分组
+     */
+    public function groupDelete()
+    {
+        if (!$this->isPost()) return error('非法请求');
+        $id = $this->post['id'] ?? 0;
         try {
-            $context = stream_context_create([
-                'http' => [
-                    'timeout' => 30,
-                    'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                ]
-            ]);
-            
-            $content = @file_get_contents($url, false, $context);
-            
-            if ($content === false) {
-                return false;
-            }
-            
-            $tempFile = sys_get_temp_dir() . '/' . uniqid() . '_' . basename($url);
-            
-            if (file_put_contents($tempFile, $content) === false) {
-                return false;
-            }
-            
-            return $tempFile;
-            
+            $group = ConfigGroupModel::find($id);
+            if (!$group) throw new \Exception('分组不存在');
+            $count = ConfigModel::where('group_key', $group['group_key'])->count();
+            if ($count > 0) throw new \Exception('该分组下还有配置项，无法删除');
+            $group->delete();
+            return success('删除成功');
         } catch (\Exception $e) {
-            return false;
+            return error($e->getMessage());
+        }
+    }
+
+    /**
+     * 配置项列表
+     */
+    public function configManage()
+    {
+        $groupKey = $this->get['group'] ?? '';
+        $pluginId = $this->get['plugin'] ?? '';
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
+
+        if (empty($groupKey)) return error('请先选择配置分组');
+
+        $group = ConfigGroupModel::where('group_key', $groupKey)->find();
+        if (!$group) return error('配置分组不存在');
+
+        $where = [['group_key', '=', $groupKey]];
+        if ($pluginId !== '') $where[] = ['plugin', '=', $pluginId];
+
+        $list = ConfigModel::where($where)->order('sort asc, id desc')->paginate(20);
+
+        return $this->view('config/config_manage', [
+            'groupKey' => $groupKey,
+            'pluginId' => $pluginId,
+            'group'    => $group,
+            'list'     => $list,
+        ]);
+    }
+
+    /**
+     * 添加配置项
+     */
+    public function configAdd()
+    {
+        $groupKey = $this->get['group'] ?? '';
+        $pluginId = $this->get['plugin'] ?? '';
+        if ($pluginId !== '') {
+            if ($err = $this->checkSuperAdmin()) return $err;
+        }
+        if (empty($groupKey)) return error('请先选择配置分组');
+
+        $group = ConfigGroupModel::where('group_key', $groupKey)->find();
+        if (!$group) return error('配置分组不存在');
+
+        if ($this->isPost()) {
+            try {
+                validate([
+                    'config_key|配置项标识'   => 'require',
+                    'config_title|配置项标题' => 'require',
+                ])->check($this->post);
+                $exists = ConfigModel::where('config_key', $this->post['config_key'])->find();
+                if ($exists) throw new \Exception('配置项标识已存在');
+                $data                = $this->post;
+                $data['group_key']   = $groupKey;
+                $data['group_title'] = $group['group_title'];
+                $data['plugin']      = $pluginId;
+                if (!empty($data['config_options']) && is_string($data['config_options'])) {
+                    json_decode($data['config_options']);
+                    if (json_last_error() !== JSON_ERROR_NONE) throw new \Exception('配置选项格式错误');
+                }
+                ConfigModel::create($data);
+            } catch (\Exception $e) {
+                return error($e->getMessage() ?: '添加失败');
+            }
+            $back = 'configManage?group=' . $groupKey;
+            if ($pluginId) $back .= '&plugin=' . $pluginId;
+            if (!empty($this->get['iframe'])) $back .= '&iframe=1';
+            return success('添加成功', $back);
+        }
+        return $this->view('config/config_add', ['group' => $group, 'pluginId' => $pluginId]);
+    }
+
+    /**
+     * 编辑配置项
+     */
+    public function configEdit()
+    {
+        $id     = $this->get['id'] ?? 0;
+        $config = ConfigModel::find($id);
+        if (!$config) return error('配置项不存在');
+
+        $groupKey = $config['group_key'];
+        $pluginId = $config['plugin'] ?? '';
+
+        if ($this->isPost()) {
+            try {
+                validate([
+                    'config_key|配置项标识'   => 'require',
+                    'config_title|配置项标题' => 'require',
+                ])->check($this->post);
+                $exists = ConfigModel::where('config_key', $this->post['config_key'])
+                    ->where('id', '<>', $id)->find();
+                if ($exists) throw new \Exception('配置项标识已存在');
+                $data              = $this->post;
+                $data['group_key'] = $groupKey;
+                $data['plugin']    = $pluginId;
+                if (!empty($data['config_options']) && is_string($data['config_options'])) {
+                    json_decode($data['config_options']);
+                    if (json_last_error() !== JSON_ERROR_NONE) throw new \Exception('配置选项格式错误');
+                }
+                $config->save($data);
+            } catch (\Exception $e) {
+                return error($e->getMessage() ?: '编辑失败');
+            }
+            $back = 'configManage?group=' . $groupKey;
+            if ($pluginId) $back .= '&plugin=' . $pluginId;
+            if (!empty($this->get['iframe'])) $back .= '&iframe=1';
+            return success('编辑成功', $back);
+        }
+
+        $group = ConfigGroupModel::where('group_key', $groupKey)->find();
+        if (!empty($config['config_options']) && is_array($config['config_options'])) {
+            $config['config_options'] = json_encode($config['config_options'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        }
+        return $this->view('config/config_edit', ['config' => $config, 'group' => $group, 'pluginId' => $pluginId]);
+    }
+
+    /**
+     * 删除配置项
+     */
+    public function configDelete()
+    {
+        if (!$this->isPost()) return error('非法请求');
+        $id = $this->post['id'] ?? 0;
+        try {
+            $config = ConfigModel::find($id);
+            if (!$config) return error('配置项不存在');
+            $config->delete();
+            return success('删除成功');
+        } catch (\Exception $e) {
+            return error($e->getMessage());
         }
     }
 }
