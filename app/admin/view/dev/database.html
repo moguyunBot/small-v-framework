@@ -54,11 +54,11 @@
                   <td>{{ table.size_format }}</td>
                   <td>{{ table.comment || '-' }}</td>
                   <td>
-                    <div class="btn-group btn-group-sm">
-                      <button class="btn btn-primary" @click="viewStructure(table.name)">结构</button>
-                      <button class="btn btn-info" @click="viewData(table.name)">数据</button>
-                      <button class="btn btn-warning" @click="optimizeTable(table.name)">优化</button>
-                    </div>
+                    <a href="javascript:void(0)" @click="viewStructure(table.name)">结构</a>
+                    <span class="text-muted mx-1">|</span>
+                    <a href="javascript:void(0)" @click="viewData(table.name)">数据</a>
+                    <span class="text-muted mx-1">|</span>
+                    <a href="javascript:void(0)" @click="optimizeTable(table.name)">优化</a>
                   </td>
                 </tr>
               </tbody>

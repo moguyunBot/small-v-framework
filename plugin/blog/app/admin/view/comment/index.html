@@ -26,11 +26,9 @@
               </td>
               <td>{$c.create_time}</td>
               <td>
-                <div class="btn-group btn-group-sm">
-                  {if $c.status != 1}<button class="btn btn-default" @click="approve({$c.id})">通过</button>{/if}
-                  {if $c.status != 2}<button class="btn btn-default" @click="reject({$c.id})">拒绝</button>{/if}
-                  <button class="btn btn-default" @click="del({$c.id})">删除</button>
-                </div>
+                {if $c.status != 1}<a href="javascript:void(0)" @click="approve({$c.id})">通过</a><span class="text-muted mx-1">|</span>{/if}
+                {if $c.status != 2}<a href="javascript:void(0)" @click="reject({$c.id})">拒绝</a><span class="text-muted mx-1">|</span>{/if}
+                <a href="javascript:void(0)" class="text-danger" @click="del({$c.id})">删除</a>
               </td>
             </tr>
             {/foreach}

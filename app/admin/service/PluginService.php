@@ -255,28 +255,11 @@ class PluginService
             return;
         }
 
-        $config = require $menuFile;
-        $menus  = $config['menus'] ?? [];
-        $perms  = $config['permissions'] ?? [];
+        $menus = require $menuFile;
 
         // 递归写入菜单
         foreach ($menus as $menu) {
             $this->insertMenuRule($menu, 0, $identifier, 1);
-        }
-
-        // 写入额外权限节点（非菜单）
-        foreach ($perms as $perm) {
-            Rule::create([
-                'title'   => $perm['title'],
-                'href'    => $perm['href'] ?? '',
-                'icon'    => '',
-                'pid'     => 0,
-                'sort'    => $perm['sort'] ?? 99,
-                'is_menu' => 0,
-                'status'  => 1,
-                'type'    => 'plugin',
-                'plugin'  => $identifier,
-            ]);
         }
     }
 

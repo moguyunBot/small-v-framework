@@ -31,10 +31,9 @@
                 <td>{$v.create_time}</td>
                 <td>{$v.update_time}</td>
                 <td>
-                  <div class="btn-group btn-group-sm">
-                    <a class="btn btn-default" href="edit?id={$v.id}">修改</a>
-                    <button class="btn btn-default" onclick="del({$v.id})">删除</button>
-                  </div>
+                  <a href="edit?id={$v.id}">修改</a>
+                  <span class="text-muted mx-1">|</span>
+                  <a href="javascript:void(0)" class="text-danger" onclick="del({$v.id})">删除</a>
                 </td>
               </tr>
                 {/if}

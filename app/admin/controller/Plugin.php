@@ -50,7 +50,7 @@ class Plugin extends Base
             }
             if (!$entry && file_exists($menuFile)) {
                 $menu  = (function($f) { return include $f; })($menuFile);
-                $entry = is_array($menu) ? $findFirstHref($menu['menus'] ?? []) : '';
+                $entry = is_array($menu) ? $findFirstHref($menu) : '';
             }
             $p['admin_entry'] = $entry;
         }
