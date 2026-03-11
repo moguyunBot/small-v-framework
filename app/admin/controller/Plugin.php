@@ -130,20 +130,6 @@ class Plugin extends Base
     /**
      * 删除插件（物理删除）
      */
-    public function del()
-    {
-        if (!$this->isPost()) {
-            return error('非法请求');
-        }
-        $identifier = $this->post['identifier'] ?? '';
-        try {
-            $this->service->delete($identifier);
-        } catch (\Exception $e) {
-            return error($e->getMessage());
-        }
-        return success('删除成功');
-    }
-
     /**
      * 上传插件 ZIP 包
      */

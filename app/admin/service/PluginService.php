@@ -70,6 +70,19 @@ class PluginService
             throw new \Exception('插件不存在');
         }
 
+        // 检查依赖插件是否已安装
+        $appFile = base_path("plugin/{$identifier}/config/app.php");
+        if (file_exists($appFile)) {
+            $appConfig = require $appFile;
+            $requires  = $appConfig['require'] ?? [];
+            foreach ($requires as $dep) {
+                $depPlugin = PluginModel::findByIdentifier($dep);
+                if (!$depPlugin || !$depPlugin->installed) {
+                    throw new \Exception("请先安装依赖插件：{$dep}");
+                }
+            }
+        }
+
         $hasRules = Rule::where('plugin', $identifier)->count();
 
         if (!$hasRules) {
@@ -137,6 +150,24 @@ class PluginService
         $plugin = PluginModel::findByIdentifier($identifier);
         if (!$plugin) {
             throw new \Exception('插件不存在');
+        }
+
+        // 检查是否有已安装的插件依赖此插件
+        $pluginDir = base_path('plugin');
+        $dirs = array_filter(glob($pluginDir . '/*'), 'is_dir');
+        foreach ($dirs as $dir) {
+            $depId     = basename($dir);
+            $appFile   = $dir . '/config/app.php';
+            if ($depId === $identifier || !file_exists($appFile)) continue;
+            $depConfig = require $appFile;
+            $requires  = $depConfig['require'] ?? [];
+            if (in_array($identifier, $requires)) {
+                $depPlugin = PluginModel::findByIdentifier($depId);
+                if ($depPlugin && $depPlugin->installed) {
+                    $depName = $depConfig['name'] ?? $depId;
+                    throw new \Exception("插件 [{$depName}] 依赖此插件，请先卸载它");
+                }
+            }
         }
         $plugin->save(['installed' => 0, 'status' => 0]);
         // 卸载时直接删除菜单规则，避免重复安装产生重复数据

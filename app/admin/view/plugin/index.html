@@ -125,7 +125,6 @@
                 {/if}
               {else}
                 <button class="btn btn-sm btn-success" onclick="pluginAction('install','{$p.identifier}')"><i class="mdi mdi-package-down"></i> 安装</button>
-                <button class="btn btn-sm btn-outline-danger" onclick="pluginAction('del','{$p.identifier}')"><i class="mdi mdi-delete"></i> 删除</button>
               {/if}
             </div>
           </div>
@@ -233,7 +232,7 @@ const _app = createVueApp({
         },
         openConfigManage(identifier, name) {
             document.getElementById('pluginModalTitle').textContent = name + ' · 配置项管理';
-            document.getElementById('pluginModalIframe').src = '/admin/config/configManage?group=' + identifier + '&plugin=' + identifier + '&iframe=1';
+            document.getElementById('pluginModalIframe').src = '/admin/config/groupIndex?plugin=' + identifier + '&iframe=1';
             new bootstrap.Modal(document.getElementById('pluginModal')).show();
         },
         openPluginSetting(identifier, name) {
@@ -247,7 +246,6 @@ const _app = createVueApp({
                 uninstall: '确定要卸载吗？数据将保留，可重新安装恢复。',
                 enable:    '确定要启用该插件吗？',
                 disable:   '确定要停用该插件吗？后台菜单将立即隐藏。',
-                del:       '确定要删除该插件吗？插件文件和全部数据将被永久删除，不可撤销！',
             };
             this.confirm(msgs[action], () => {
                 this.post('/admin/plugin/' + action, { identifier }, res => {
